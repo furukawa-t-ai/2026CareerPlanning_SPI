@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>SPI3 対策模擬テスト 第2回</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #f8fafc;
+        }
+        .fade-in {
+            animation: fadeIn 0.4s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .math-block {
+            background: #ffffff;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 8px 0;
+            border-left: 4px solid #3b82f6;
+            font-family: 'Times New Roman', serif;
+        }
+    </style>
+</head>
+<body class="min-h-screen py-8 px-4">
+    <div id="app" class="max-w-2xl mx-auto">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <div class="inline-block bg-emerald-600 text-white text-xs font-bold px-3 py-1 rounded-full mb-2">全10回シリーズ</div>
+            <h1 class="text-3xl font-bold text-slate-800">SPI3 対策模擬テスト</h1>
+            <p class="text-lg font-medium text-emerald-600 mt-1">【第2回】非言語・計算集中編</p>
+        </header>
+
+        <!-- Quiz Container -->
+        <div id="quiz-container" class="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 md:p-10 fade-in">
+            <!-- Progress -->
+            <div class="mb-8">
+                <div class="flex justify-between items-end mb-3">
+                    <span id="progress-text" class="text-slate-500 font-bold text-sm">QUESTION 1 / 5</span>
+                    <span id="score-text" class="text-emerald-600 font-bold text-sm">正解数: 0</span>
+                </div>
+                <div class="w-full bg-slate-100 rounded-full h-3">
+                    <div id="progress-bar" class="bg-emerald-500 h-3 rounded-full transition-all duration-500" style="width: 20%"></div>
+                </div>
+            </div>
+
+            <!-- Question Section -->
+            <div id="question-content">
+                <div id="category-badge" class="inline-block px-3 py-1 rounded-md text-xs font-bold mb-4 bg-slate-100 text-slate-600 tracking-wider"></div>
+                <h2 id="question-text" class="text-xl font-bold text-slate-800 mb-8 leading-relaxed whitespace-pre-wrap"></h2>
+                
+                <div id="options-container" class="grid grid-cols-1 gap-4">
+                    <!-- Options -->
+                </div>
+
+                <!-- Explanation Area -->
+                <div id="explanation-container" class="hidden mt-10 p-6 rounded-2xl border-2 fade-in">
+                    <div class="flex items-center mb-4">
+                        <div id="result-icon" class="mr-3"></div>
+                        <div id="result-badge" class="font-bold text-xl"></div>
+                    </div>
+                    <div class="bg-white/50 rounded-lg p-1 mb-6">
+                        <p id="explanation-text" class="text-slate-700 leading-relaxed text-md"></p>
+                    </div>
+                    <button id="next-btn" class="w-full py-4 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-900 transition-all active:scale-[0.98] shadow-lg shadow-slate-200">
+                        次へ進む
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="result-screen" class="hidden bg-white rounded-3xl shadow-2xl border border-slate-100 p-10 text-center fade-in">
+            <div class="mb-6 inline-flex items-center justify-center w-20 h-20 bg-emerald-50 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">第2回 終了！</h2>
+            <p class="text-slate-500 mb-8">お疲れ様でした。今回の結果は...</p>
+            
+            <div class="relative inline-block mb-10">
+                <div class="text-7xl font-black text-emerald-600">
+                    <span id="final-score">0</span><span class="text-3xl text-slate-300">/5</span>
+                </div>
+            </div>
+            
+            <p id="result-message" class="text-lg font-bold text-slate-700 mb-10 px-4"></p>
+            
+            <div class="space-y-3">
+                <button onclick="location.reload()" class="w-full py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200">
+                    もう一度挑戦
+                </button>
+                <p class="text-sm text-slate-400">次回の「第3回：言語・語彙力強化編」もお楽しみに！</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                category: "非言語：損益算",
+                question: "原価 2,000円の商品に、原価の4割の利益を見込んで定価をつけました。この商品を定価の1割引きで売ったとき、利益はいくらになりますか。",
+                options: [
+                    { text: "520円", isCorrect: true },
+                    { text: "600円", isCorrect: false },
+                    { text: "800円", isCorrect: false },
+                    { text: "2,520円", isCorrect: false }
+                ],
+                explanation: "<strong>【ステップ1：定価を求める】</strong><br>定価は原価の4割（0.4倍）増しなので、<br><div class='math-block'>2,000 × (1 + 0.4) = 2,800円</div><br><strong>【ステップ2：実際の売値を求める】</strong><br>定価の1割引きなので、定価の9割（0.9倍）の価格になります。<br><div class='math-block'>2,800 × 0.9 = 2,520円</div><br><strong>【ステップ3：利益を計算する】</strong><br>利益は「売値 - 原価」です。<br><div class='math-block'>2,520 - 2,000 = 520円</div>"
+            },
+            {
+                category: "非言語：仕事算",
+                question: "ある仕事を仕上げるのに、Aさん1人では12日、Bさん1人では18日かかります。この仕事を最初Aさん1人で4日間行い、残りをBさん1人で行いました。Bさんは何日間働きましたか。",
+                options: [
+                    { text: "8日間", isCorrect: false },
+                    { text: "10日間", isCorrect: false },
+                    { text: "12日間", isCorrect: true },
+                    { text: "14日間", isCorrect: false }
+                ],
+                explanation: "<strong>【考え方のコツ】全体の仕事量を「1」ではなく、日数の最小公倍数に設定すると楽になります。</strong><br>12と18の最小公倍数である「36」を全体の仕事量とします。<br>・Aの1日の仕事量：36 ÷ 12 = 3<br>・Bの1日の仕事量：36 ÷ 18 = 2<br><br><strong>【計算プロセス】</strong><br>1. Aが4日間でした仕事量：3 × 4 = 12<br>2. 残りの仕事量：36 - 12 = 24<br>3. Bが24をこなすのにかかる日数：24 ÷ 2 = 12日"
+            },
+            {
+                category: "非言語：分割払い",
+                question: "代金 48,000円の品物を、頭金 12,000円を支払い、残金を8回に分けて分割払いにしました。1回あたりの支払額はいくらですか。（利息などは考えないものとします）",
+                options: [
+                    { text: "4,000円", isCorrect: false },
+                    { text: "4,500円", isCorrect: true },
+                    { text: "5,000円", isCorrect: false },
+                    { text: "6,000円", isCorrect: false }
+                ],
+                explanation: "<strong>【考え方】「残りの支払額」を正確に出してから分割します。</strong><br>1. 分割の対象となる金額を求めます。<br><div class='math-block'>48,000 - 12,000（頭金） = 36,000円</div><br>2. これを8回で割ります。<br><div class='math-block'>36,000 ÷ 8 = 4,500円</div><br>※「頭金」は分割の回数に含まれないことに注意しましょう。"
+            },
+            {
+                category: "非言語：仕事算（2人で協力）",
+                question: "ある仕事を仕上げるのに、P君1人では20時間、Q君1人では30時間かかります。2人で協力して行うと、この仕事は何時間で終わりますか。",
+                options: [
+                    { text: "10時間", isCorrect: false },
+                    { text: "12時間", isCorrect: true },
+                    { text: "15時間", isCorrect: false },
+                    { text: "25時間", isCorrect: false }
+                ],
+                explanation: "<strong>【考え方】全体の仕事量を60（20と30の最小公倍数）とします。</strong><br>・Pの1時間の仕事量：60 ÷ 20 = 3<br>・Qの1時間の仕事量：60 ÷ 30 = 2<br><br><strong>【計算】</strong><br>2人協力すると、1時間あたりの仕事量は 3 + 2 = 5 となります。<br>全体 60 を 5 ずつ進めるので、<br><div class='math-block'>60 ÷ 5 = 12時間</div>"
+            },
+            {
+                category: "非言語：損益算（原価の逆算）",
+                question: "ある商品に、原価の3割の利益を見込んで 1,950円の定価をつけました。この商品の原価はいくらですか。",
+                options: [
+                    { text: "1,365円", isCorrect: false },
+                    { text: "1,500円", isCorrect: true },
+                    { text: "1,600円", isCorrect: false },
+                    { text: "1,650円", isCorrect: false }
+                ],
+                explanation: "<strong>【考え方】原価を x と置き、定価の「割合」を掛けます。</strong><br>原価の3割増しは「1.3倍」です。<br><div class='math-block'>x × 1.3 = 1,950</div><br>これを解くと、<br><div class='math-block'>x = 1,950 ÷ 1.3 = 1,500円</div><br><strong>【検算のコツ】</strong><br>1,500の1割は150。3割なら 150 × 3 = 450。<br>1,500 + 450 = 1,950 となり、正解であることがわかります。"
+            }
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+        let isAnswered = false;
+
+        function loadQuestion() {
+            isAnswered = false;
+            const data = quizData[currentQuestion];
+            
+            document.getElementById('category-badge').textContent = data.category;
+            document.getElementById('question-text').textContent = data.question;
+            document.getElementById('progress-text').textContent = `QUESTION ${currentQuestion + 1} / ${quizData.length}`;
+            document.getElementById('progress-bar').style.width = `${((currentQuestion + 1) / quizData.length) * 100}%`;
+            
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+            
+            data.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = "group w-full text-left p-5 border-2 border-slate-100 rounded-2xl hover:bg-emerald-50 hover:border-emerald-200 transition-all duration-200 focus:outline-none flex items-center";
+                btn.innerHTML = `
+                    <span class="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-slate-50 text-slate-400 rounded-full mr-4 font-bold group-hover:bg-emerald-100 group-hover:text-emerald-500 transition-colors">${String.fromCharCode(65 + index)}</span>
+                    <span class="text-slate-700 font-medium">${opt.text}</span>
+                `;
+                btn.onclick = () => selectOption(index);
+                optionsContainer.appendChild(btn);
+            });
+
+            document.getElementById('explanation-container').classList.add('hidden');
+        }
+
+        function selectOption(index) {
+            if (isAnswered) return;
+            isAnswered = true;
+
+            const correctIndex = quizData[currentQuestion].options.findIndex(o => o.isCorrect);
+            const options = document.getElementById('options-container').children;
+
+            if (index === correctIndex) {
+                score++;
+                options[index].classList.replace('border-slate-100', 'border-emerald-500');
+                options[index].classList.add('bg-emerald-50');
+                showExplanation(true);
+            } else {
+                options[index].classList.replace('border-slate-100', 'border-red-500');
+                options[index].classList.add('bg-red-50');
+                options[correctIndex].classList.replace('border-slate-100', 'border-emerald-500');
+                options[correctIndex].classList.add('bg-emerald-50');
+                showExplanation(false);
+            }
+            document.getElementById('score-text').textContent = `正解数: ${score}`;
+        }
+
+        function showExplanation(isCorrect) {
+            const container = document.getElementById('explanation-container');
+            const badge = document.getElementById('result-badge');
+            const icon = document.getElementById('result-icon');
+            const text = document.getElementById('explanation-text');
+            
+            container.classList.remove('hidden');
+            if (isCorrect) {
+                container.className = "mt-10 p-6 rounded-2xl border-2 fade-in bg-emerald-50 border-emerald-100";
+                badge.textContent = "正解です！";
+                badge.className = "text-emerald-700 font-bold text-xl";
+                icon.innerHTML = '<div class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white">✓</div>';
+            } else {
+                container.className = "mt-10 p-6 rounded-2xl border-2 fade-in bg-red-50 border-red-100";
+                badge.textContent = "不正解です...";
+                badge.className = "text-red-700 font-bold text-xl";
+                icon.innerHTML = '<div class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white">×</div>';
+            }
+            text.innerHTML = quizData[currentQuestion].explanation;
+        }
+
+        document.getElementById('next-btn').onclick = () => {
+            currentQuestion++;
+            if (currentQuestion < quizData.length) {
+                loadQuestion();
+            } else {
+                showResult();
+            }
+        };
+
+        function showResult() {
+            document.getElementById('quiz-container').classList.add('hidden');
+            const resultScreen = document.getElementById('result-screen');
+            resultScreen.classList.remove('hidden');
+            document.getElementById('final-score').textContent = score;
+            
+            let message = "";
+            if (score === 5) message = "完璧です！計算力は非常に高いレベルにあります。この調子で応用もこなしていきましょう。";
+            else if (score >= 3) message = "基本的な計算手法は理解できています。仕事算などの『コツ』を意識するとさらに速く解けるようになります。";
+            else message = "損益算や仕事算はSPIの要です。解説にある『最小公倍数を使う手法』などを繰り返し確認して慣れていきましょう。";
+            
+            document.getElementById('result-message').textContent = message;
+        }
+
+        window.onload = loadQuestion;
+    </script>
+</body>
+</html>
