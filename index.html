@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>SPI3 対策模擬テスト 第1回</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #f8fafc;
+        }
+        .fade-in {
+            animation: fadeIn 0.4s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen py-8 px-4">
+    <div id="app" class="max-w-2xl mx-auto">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <div class="inline-block bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full mb-2">全10回シリーズ</div>
+            <h1 class="text-3xl font-bold text-slate-800">SPI3 対策模擬テスト</h1>
+            <p class="text-lg font-medium text-blue-600 mt-1">【第1回】基礎診断編</p>
+        </header>
+
+        <!-- Quiz Container -->
+        <div id="quiz-container" class="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 md:p-10 fade-in">
+            <!-- Progress -->
+            <div class="mb-8">
+                <div class="flex justify-between items-end mb-3">
+                    <span id="progress-text" class="text-slate-500 font-bold text-sm">QUESTION 1 / 5</span>
+                    <span id="score-text" class="text-blue-600 font-bold text-sm">正解数: 0</span>
+                </div>
+                <div class="w-full bg-slate-100 rounded-full h-3">
+                    <div id="progress-bar" class="bg-blue-500 h-3 rounded-full transition-all duration-500" style="width: 20%"></div>
+                </div>
+            </div>
+
+            <!-- Question Section -->
+            <div id="question-content">
+                <div id="category-badge" class="inline-block px-3 py-1 rounded-md text-xs font-bold mb-4 bg-slate-100 text-slate-600 tracking-wider"></div>
+                <h2 id="question-text" class="text-xl font-bold text-slate-800 mb-8 leading-relaxed whitespace-pre-wrap"></h2>
+                
+                <div id="options-container" class="grid grid-cols-1 gap-4">
+                    <!-- Options -->
+                </div>
+
+                <!-- Explanation Area -->
+                <div id="explanation-container" class="hidden mt-10 p-6 rounded-2xl border-2 fade-in">
+                    <div class="flex items-center mb-4">
+                        <div id="result-icon" class="mr-3"></div>
+                        <div id="result-badge" class="font-bold text-xl"></div>
+                    </div>
+                    <div class="bg-white/50 rounded-lg p-4 mb-6">
+                        <p id="explanation-text" class="text-slate-700 leading-relaxed text-md"></p>
+                    </div>
+                    <button id="next-btn" class="w-full py-4 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-900 transition-all active:scale-[0.98] shadow-lg shadow-slate-200">
+                        次へ進む
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="result-screen" class="hidden bg-white rounded-3xl shadow-2xl border border-slate-100 p-10 text-center fade-in">
+            <div class="mb-6 inline-flex items-center justify-center w-20 h-20 bg-blue-50 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">第1回 終了！</h2>
+            <p class="text-slate-500 mb-8">お疲れ様でした。あなたのスコアは...</p>
+            
+            <div class="relative inline-block mb-10">
+                <div class="text-7xl font-black text-blue-600">
+                    <span id="final-score">0</span><span class="text-3xl text-slate-300">/5</span>
+                </div>
+            </div>
+            
+            <p id="result-message" class="text-lg font-bold text-slate-700 mb-10 px-4"></p>
+            
+            <div class="space-y-3">
+                <button onclick="location.reload()" class="w-full py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">
+                    もう一度挑戦
+                </button>
+                <p class="text-sm text-slate-400">次回の「第2回：実践応用編」もお楽しみに！</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                category: "非言語：損益算",
+                question: "ある商品を仕入れ、仕入れ値の3割の利益を見込んで定価をつけました。しかし、売れなかったので定価の2割引きで販売したところ、利益は120円になりました。この商品の仕入れ値はいくらですか。",
+                options: [
+                    { text: "2,400円", isCorrect: false },
+                    { text: "3,000円", isCorrect: true },
+                    { text: "3,200円", isCorrect: false },
+                    { text: "4,000円", isCorrect: false }
+                ],
+                explanation: "仕入れ値を x とすると、定価は 1.3x。売値は定価の2割引きなので、1.3x × 0.8 = 1.04x です。\n利益は「売値 - 仕入れ値」なので、1.04x - x = 0.04x。\nこれが120円なので、0.04x = 120 より x = 3,000 となります。"
+            },
+            {
+                category: "言語：二語の関係",
+                question: "最初に示された二語の関係と同じ関係のものを選びなさい。\n\n「筆記具：万年筆」",
+                options: [
+                    { text: "ア：果物：リンゴ", isCorrect: true },
+                    { text: "イ：時計：針", isCorrect: false },
+                    { text: "ウ：海：川", isCorrect: false },
+                    { text: "エ：学校：教室", isCorrect: false }
+                ],
+                explanation: "「筆記具」というカテゴリーの中に「万年筆」が含まれる「包含関係」です。\nアも「果物」の中に「リンゴ」が含まれるため正解です。\nイ、エは全体と部分の関係、ウは並列（同等）の関係です。"
+            },
+            {
+                category: "非言語：速度算",
+                question: "400mの長さの列車が、長さ1,200mのトンネルに入り始めてから、最後尾が抜け出すまでに80秒かかりました。この列車の速さは時速何kmですか。",
+                options: [
+                    { text: "54km/h", isCorrect: false },
+                    { text: "60km/h", isCorrect: false },
+                    { text: "72km/h", isCorrect: true },
+                    { text: "80km/h", isCorrect: false }
+                ],
+                explanation: "完全な通り抜けに必要な距離は「列車の長さ + トンネルの長さ」です。\n合計距離：400 + 1,200 = 1,600m\n秒速：1,600m ÷ 80s = 20m/s\n時速換算：20m/s × 3.6 = 72km/h"
+            },
+            {
+                category: "言語：熟語の意味",
+                question: "「事態がさらに悪化すること」を意味する慣用句を選びなさい。",
+                options: [
+                    { text: "火に油を注ぐ", isCorrect: true },
+                    { text: "水を差す", isCorrect: false },
+                    { text: "油を売る", isCorrect: false },
+                    { text: "火のない所に煙は立たぬ", isCorrect: false }
+                ],
+                explanation: "「火に油を注ぐ」は、悪い事態に勢いを与え、さらに悪化させることの例えです。\n「水を差す」は良好な状態を邪魔すること、「油を売る」は怠けることです。"
+            },
+            {
+                category: "非言語：推論",
+                question: "P〜Tの5人のテスト結果について以下の条件があります。\n(1) PはQより高い\n(2) RはSより低い\n(3) Tは最も高く、Sは2番目に高い\n全員の順位を確定させるために追加で必要な情報はどれですか。",
+                options: [
+                    { text: "QはRより高い", isCorrect: false },
+                    { text: "RはPより高い", isCorrect: true },
+                    { text: "PはSより低い", isCorrect: false },
+                    { text: "Qは最も低い", isCorrect: false }
+                ],
+                explanation: "1位T、2位Sまでは確定。残り(P, Q, R)で3〜5位を決めます。\n条件(1)よりP>Q、条件(2)よりS>R。つまりPとQの間にRがどこに入るかが不明点です。\n「RはPより高い」があれば、S(2)>R(3)>P(4)>Q(5)と決まります。"
+            }
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+        let isAnswered = false;
+
+        function loadQuestion() {
+            isAnswered = false;
+            const data = quizData[currentQuestion];
+            
+            document.getElementById('category-badge').textContent = data.category;
+            document.getElementById('question-text').textContent = data.question;
+            document.getElementById('progress-text').textContent = `QUESTION ${currentQuestion + 1} / ${quizData.length}`;
+            document.getElementById('progress-bar').style.width = `${((currentQuestion + 1) / quizData.length) * 100}%`;
+            
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+            
+            data.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = "group w-full text-left p-5 border-2 border-slate-100 rounded-2xl hover:bg-blue-50 hover:border-blue-200 transition-all duration-200 focus:outline-none flex items-center";
+                btn.innerHTML = `
+                    <span class="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-slate-50 text-slate-400 rounded-full mr-4 font-bold group-hover:bg-blue-100 group-hover:text-blue-500 transition-colors">${String.fromCharCode(65 + index)}</span>
+                    <span class="text-slate-700 font-medium">${opt.text}</span>
+                `;
+                btn.onclick = () => selectOption(index);
+                optionsContainer.appendChild(btn);
+            });
+
+            document.getElementById('explanation-container').classList.add('hidden');
+        }
+
+        function selectOption(index) {
+            if (isAnswered) return;
+            isAnswered = true;
+
+            const correctIndex = quizData[currentQuestion].options.findIndex(o => o.isCorrect);
+            const options = document.getElementById('options-container').children;
+
+            if (index === correctIndex) {
+                score++;
+                options[index].classList.replace('border-slate-100', 'border-green-500');
+                options[index].classList.add('bg-green-50');
+                showExplanation(true);
+            } else {
+                options[index].classList.replace('border-slate-100', 'border-red-500');
+                options[index].classList.add('bg-red-50');
+                options[correctIndex].classList.replace('border-slate-100', 'border-green-500');
+                options[correctIndex].classList.add('bg-green-50');
+                showExplanation(false);
+            }
+            document.getElementById('score-text').textContent = `正解数: ${score}`;
+        }
+
+        function showExplanation(isCorrect) {
+            const container = document.getElementById('explanation-container');
+            const badge = document.getElementById('result-badge');
+            const icon = document.getElementById('result-icon');
+            const text = document.getElementById('explanation-text');
+            
+            container.classList.remove('hidden');
+            if (isCorrect) {
+                container.className = "mt-10 p-6 rounded-2xl border-2 fade-in bg-green-50 border-green-100";
+                badge.textContent = "正解です！";
+                badge.className = "text-green-700 font-bold text-xl";
+                icon.innerHTML = '<div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white">✓</div>';
+            } else {
+                container.className = "mt-10 p-6 rounded-2xl border-2 fade-in bg-red-50 border-red-100";
+                badge.textContent = "残念、不正解...";
+                badge.className = "text-red-700 font-bold text-xl";
+                icon.innerHTML = '<div class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white">×</div>';
+            }
+            text.innerHTML = quizData[currentQuestion].explanation.replace(/\n/g, '<br>');
+        }
+
+        document.getElementById('next-btn').onclick = () => {
+            currentQuestion++;
+            if (currentQuestion < quizData.length) {
+                loadQuestion();
+            } else {
+                showResult();
+            }
+        };
+
+        function showResult() {
+            document.getElementById('quiz-container').classList.add('hidden');
+            const resultScreen = document.getElementById('result-screen');
+            resultScreen.classList.remove('hidden');
+            document.getElementById('final-score').textContent = score;
+            
+            let message = "";
+            if (score === 5) message = "素晴らしい！第1回の基礎は完璧です。この調子で第2回も突破しましょう。";
+            else if (score >= 3) message = "合格ラインです。間違えた問題の解法をしっかり復習して次に備えましょう。";
+            else message = "少し苦戦したようです。SPIは慣れが重要です。まずはこの5問を完璧に理解しましょう！";
+            
+            document.getElementById('result-message').textContent = message;
+        }
+
+        window.onload = loadQuestion;
+    </script>
+</body>
+</html>
