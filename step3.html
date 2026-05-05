@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>SPI3 対策模擬テスト 第3回</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #f8fafc;
+        }
+        .fade-in {
+            animation: fadeIn 0.4s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* 詳細解説のアニメーション用 */
+        .expand-transition {
+            transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+        .expand-transition.open {
+            max-height: 500px; /* 十分な高さを確保 */
+            opacity: 1;
+        }
+        .detail-box {
+            background: rgba(255, 255, 255, 0.7);
+            border-left: 4px solid #8b5cf6;
+            padding: 12px 16px;
+            border-radius: 4px 8px 8px 4px;
+            margin-top: 12px;
+        }
+    </style>
+</head>
+<body class="min-h-screen py-8 px-4">
+    <div id="app" class="max-w-2xl mx-auto">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <div class="inline-block bg-violet-600 text-white text-xs font-bold px-3 py-1 rounded-full mb-2">全10回シリーズ</div>
+            <h1 class="text-3xl font-bold text-slate-800">SPI3 対策模擬テスト</h1>
+            <p class="text-lg font-medium text-violet-600 mt-1">【第3回】言語・語彙力強化編</p>
+        </header>
+
+        <!-- Quiz Container -->
+        <div id="quiz-container" class="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 md:p-10 fade-in">
+            <!-- Progress -->
+            <div class="mb-8">
+                <div class="flex justify-between items-end mb-3">
+                    <span id="progress-text" class="text-slate-500 font-bold text-sm">QUESTION 1 / 5</span>
+                    <span id="score-text" class="text-violet-600 font-bold text-sm">正解数: 0</span>
+                </div>
+                <div class="w-full bg-slate-100 rounded-full h-3">
+                    <div id="progress-bar" class="bg-violet-500 h-3 rounded-full transition-all duration-500" style="width: 20%"></div>
+                </div>
+            </div>
+
+            <!-- Question Section -->
+            <div id="question-content">
+                <div id="category-badge" class="inline-block px-3 py-1 rounded-md text-xs font-bold mb-4 bg-slate-100 text-slate-600 tracking-wider"></div>
+                <h2 id="question-text" class="text-xl font-bold text-slate-800 mb-8 leading-relaxed whitespace-pre-wrap"></h2>
+                
+                <div id="options-container" class="grid grid-cols-1 gap-4">
+                    <!-- Options -->
+                </div>
+
+                <!-- Explanation Area -->
+                <div id="explanation-container" class="hidden mt-10 p-6 rounded-2xl border-2 fade-in">
+                    <div class="flex items-center mb-4">
+                        <div id="result-icon" class="mr-3"></div>
+                        <div id="result-badge" class="font-bold text-xl"></div>
+                    </div>
+                    
+                    <div class="bg-white/60 rounded-xl p-5 mb-6 shadow-sm">
+                        <!-- 簡潔な解説 -->
+                        <p id="short-explanation-text" class="text-slate-800 font-medium leading-relaxed"></p>
+                        
+                        <!-- 更に詳しくボタン -->
+                        <button id="toggle-detail-btn" class="mt-4 flex items-center text-sm font-bold text-violet-600 hover:text-violet-800 transition-colors focus:outline-none">
+                            <svg id="toggle-icon" class="w-4 h-4 mr-1 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            <span>更に詳しく解説</span>
+                        </button>
+
+                        <!-- 詳細な解説（初期状態は非表示） -->
+                        <div id="detailed-explanation-wrapper" class="expand-transition">
+                            <div class="detail-box">
+                                <p id="detailed-explanation-text" class="text-slate-700 text-sm leading-relaxed"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="next-btn" class="w-full py-4 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-900 transition-all active:scale-[0.98] shadow-lg shadow-slate-200">
+                        次の問題へ進む
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="result-screen" class="hidden bg-white rounded-3xl shadow-2xl border border-slate-100 p-10 text-center fade-in">
+            <div class="mb-6 inline-flex items-center justify-center w-20 h-20 bg-violet-50 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">第3回 終了！</h2>
+            <p class="text-slate-500 mb-8">お疲れ様でした。今回の語彙力スコアは...</p>
+            
+            <div class="relative inline-block mb-10">
+                <div class="text-7xl font-black text-violet-600">
+                    <span id="final-score">0</span><span class="text-3xl text-slate-300">/5</span>
+                </div>
+            </div>
+            
+            <p id="result-message" class="text-lg font-bold text-slate-700 mb-10 px-4"></p>
+            
+            <div class="space-y-3">
+                <button onclick="location.reload()" class="w-full py-4 bg-violet-600 text-white font-bold rounded-2xl hover:bg-violet-700 transition-all shadow-lg shadow-violet-200">
+                    もう一度挑戦
+                </button>
+                <p class="text-sm text-slate-400">次回の「第4回：非言語・論理推論編」もお楽しみに！</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                category: "言語：二語の関係",
+                question: "最初に示された二語の関係と同じ関係のものを、ア～エから選びなさい。\n\n「医師：診察」",
+                options: [
+                    { text: "ア：教師：学校", isCorrect: false },
+                    { text: "イ：歌手：歌唱", isCorrect: true },
+                    { text: "ウ：鉛筆：筆記", isCorrect: false },
+                    { text: "エ：画家：絵画", isCorrect: false }
+                ],
+                shortExplanation: "「医師」が「診察」をするという【職業（主体）：その行為】の関係です。イも「歌手」が「歌唱」をするので同じ関係です。",
+                detailedExplanation: "<strong>【解法のコツ】2つの言葉を短い文でつなぐ</strong>\n「医師」は「診察」をする。（職業：行為）\n\n各選択肢を同じように文にしてみましょう。\nア：教師は学校【にいる・で働く】（職業：場所）\nイ：歌手は歌唱【をする】（職業：行為）→ 一致！\nウ：鉛筆【を使って】筆記する（道具：行為）\nエ：画家は絵画【を描く】（職業：生み出す作品）\nよって、論理的関係が完全に一致するのは「イ」となります。"
+            },
+            {
+                category: "言語：熟語の意味",
+                question: "「人の真価や物の価値を判定する目安となるもの」を意味する熟語として、最も適切なものを選びなさい。",
+                options: [
+                    { text: "試金石（しきんせき）", isCorrect: true },
+                    { text: "登竜門（とうりゅうもん）", isCorrect: false },
+                    { text: "布石（ふせき）", isCorrect: false },
+                    { text: "金字塔（きんじとう）", isCorrect: false }
+                ],
+                shortExplanation: "正解は「試金石」です。もともとは金の品質を調べるために使われた石のことで、転じて「価値や力量を試す物事」を指すようになりました。",
+                detailedExplanation: "<strong>【各選択肢の意味】</strong>\n・<strong>試金石</strong>：力量や価値を判定するための基準となる出来事。（例：このプロジェクトは彼の試金石となる）\n・<strong>登竜門</strong>：立身出世のための関門。そこを通り抜ければ出世できる難しい試験など。（例：新人文学賞は作家の登竜門だ）\n・<strong>布石</strong>：将来のためにあらかじめ手はずを整えておくこと。（例：次期社長に向けた布石を打つ）\n・<strong>金字塔</strong>：後世に長く残るような優れた業績。（例：ピラミッドのこと。転じて、金字塔を打ち立てる）"
+            },
+            {
+                category: "言語：語句の用法",
+                question: "次の文の下線部「かける」と同じ意味・用法で使われているものを一つ選びなさい。\n\n「新規事業に時間を<u>かける</u>」",
+                options: [
+                    { text: "壁に絵をかける", isCorrect: false },
+                    { text: "多大な迷惑をかける", isCorrect: false },
+                    { text: "橋をかける", isCorrect: false },
+                    { text: "多額の費用をかける", isCorrect: true }
+                ],
+                shortExplanation: "問題文の「かける」は「費やす（消費する）」という意味です。選択肢の中で「費やす」に置き換えられるのは「費用をかける」のみです。",
+                detailedExplanation: "<strong>【多義語の判別方法】別の言葉に置き換えてみる</strong>\n問題文：「時間を費やす（消費する）」\n\nア：「壁に絵を吊るす（ぶらさげる）」\nイ：「迷惑を及ぼす（与える）」\nウ：「橋を渡す（架設する）」\nエ：「費用を費やす（消費する）」\n\nこのように別の同義語に置き換えることで、直感ではなく論理的に同じ用法の語を見つけることができます。"
+            },
+            {
+                category: "言語：熟語の成り立ち",
+                question: "次の熟語と同じ成り立ちのものを選びなさい。\n\n「登山」",
+                options: [
+                    { text: "読書", isCorrect: true },
+                    { text: "寒冷", isCorrect: false },
+                    { text: "高低", isCorrect: false },
+                    { text: "国立", isCorrect: false }
+                ],
+                shortExplanation: "「登山」は「山に（を）登る」という【動詞 ＋ 目的語】の構造です。「読書（書を読む）」が同じ構造になります。",
+                detailedExplanation: "<strong>【熟語の成り立ち 5つの基本パターン】</strong>\n問題の「登山（山に登る）」は「下の漢字が上の漢字の目的語になる」パターンです。\n\nア：読書（書を読む）→ <strong>動詞＋目的語（正解）</strong>\nイ：寒冷（寒くて冷たい）→ <strong>似た意味の漢字を重ねる</strong>\nウ：高低（高いと低い）→ <strong>反対の意味の漢字を重ねる</strong>\nエ：国立（国が立てる）→ <strong>主語＋述語</strong>\n※他にも「急増（急に増える）」のような「上が下を修飾する」パターンも頻出です。"
+            },
+            {
+                category: "言語：空欄補充",
+                question: "次の文の（　）に入る最も適切な接続詞を選びなさい。\n\n「彼は非常に優秀なプログラマーだ。（　　　）、コミュニケーション能力にも長けており、チームのまとめ役としても活躍している。」",
+                options: [
+                    { text: "しかし", isCorrect: false },
+                    { text: "すなわち", isCorrect: false },
+                    { text: "そのうえ", isCorrect: true },
+                    { text: "なぜなら", isCorrect: false }
+                ],
+                shortExplanation: "前後の文は「優秀である」ことと「コミュニケーション能力が高い」ことのプラス要素を重ねています。したがって「添加（付け加える）」の接続詞が入ります。",
+                detailedExplanation: "<strong>【文脈の論理関係を見抜く】</strong>\n前半：「優秀なプログラマー（＋の評価）」\n後半：「コミュニケーション能力にも長けている（＋の評価）」\nこれらは逆接（対立）ではなく、並立・添加の関係です。\n\n・しかし（逆接）：前後の内容が対立する場合\n・すなわち（換言）：前の内容を別の言葉で言い換える場合\n・<strong>そのうえ（添加）</strong>：前の事柄に、さらに別の事柄を付け加える場合\n・なぜなら（理由）：後ろの文で理由を説明する場合"
+            }
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+        let isAnswered = false;
+
+        // 要素の取得
+        const toggleBtn = document.getElementById('toggle-detail-btn');
+        const detailWrapper = document.getElementById('detailed-explanation-wrapper');
+        const toggleIcon = document.getElementById('toggle-icon');
+        const toggleText = toggleBtn.querySelector('span');
+
+        function loadQuestion() {
+            isAnswered = false;
+            const data = quizData[currentQuestion];
+            
+            document.getElementById('category-badge').textContent = data.category;
+            document.getElementById('question-text').textContent = data.question;
+            document.getElementById('progress-text').textContent = `QUESTION ${currentQuestion + 1} / ${quizData.length}`;
+            document.getElementById('progress-bar').style.width = `${((currentQuestion + 1) / quizData.length) * 100}%`;
+            
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+            
+            data.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = "group w-full text-left p-5 border-2 border-slate-100 rounded-2xl hover:bg-violet-50 hover:border-violet-200 transition-all duration-200 focus:outline-none flex items-center";
+                btn.innerHTML = `
+                    <span class="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-slate-50 text-slate-400 rounded-full mr-4 font-bold group-hover:bg-violet-100 group-hover:text-violet-500 transition-colors">${String.fromCharCode(65 + index)}</span>
+                    <span class="text-slate-700 font-medium">${opt.text}</span>
+                `;
+                btn.onclick = () => selectOption(index);
+                optionsContainer.appendChild(btn);
+            });
+
+            // 解説エリアをリセットして隠す
+            document.getElementById('explanation-container').classList.add('hidden');
+            
+            // 更に詳しくボタンの状態リセット
+            detailWrapper.classList.remove('open');
+            toggleIcon.classList.remove('rotate-180');
+            toggleText.textContent = "更に詳しく解説";
+        }
+
+        function selectOption(index) {
+            if (isAnswered) return;
+            isAnswered = true;
+
+            const correctIndex = quizData[currentQuestion].options.findIndex(o => o.isCorrect);
+            const options = document.getElementById('options-container').children;
+
+            if (index === correctIndex) {
+                score++;
+                options[index].classList.replace('border-slate-100', 'border-green-500');
+                options[index].classList.add('bg-green-50');
+                showExplanation(true);
+            } else {
+                options[index].classList.replace('border-slate-100', 'border-red-500');
+                options[index].classList.add('bg-red-50');
+                options[correctIndex].classList.replace('border-slate-100', 'border-green-500');
+                options[correctIndex].classList.add('bg-green-50');
+                showExplanation(false);
+            }
+            document.getElementById('score-text').textContent = `正解数: ${score}`;
+        }
+
+        function showExplanation(isCorrect) {
+            const container = document.getElementById('explanation-container');
+            const badge = document.getElementById('result-badge');
+            const icon = document.getElementById('result-icon');
+            const shortText = document.getElementById('short-explanation-text');
+            const detailText = document.getElementById('detailed-explanation-text');
+            
+            container.classList.remove('hidden');
+            
+            if (isCorrect) {
+                container.className = "mt-10 p-6 rounded-2xl border-2 fade-in bg-green-50 border-green-100";
+                badge.textContent = "正解です！";
+                badge.className = "text-green-700 font-bold text-xl";
+                icon.innerHTML = '<div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white">✓</div>';
+            } else {
+                container.className = "mt-10 p-6 rounded-2xl border-2 fade-in bg-red-50 border-red-100";
+                badge.textContent = "不正解です...";
+                badge.className = "text-red-700 font-bold text-xl";
+                icon.innerHTML = '<div class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white">×</div>';
+            }
+            
+            // 改行コードを <br> に変換して挿入
+            shortText.innerHTML = quizData[currentQuestion].shortExplanation.replace(/\n/g, '<br>');
+            detailText.innerHTML = quizData[currentQuestion].detailedExplanation.replace(/\n/g, '<br>');
+        }
+
+        // アコーディオン（更に詳しく）の開閉ロジック
+        toggleBtn.addEventListener('click', () => {
+            const isOpen = detailWrapper.classList.contains('open');
+            if (isOpen) {
+                detailWrapper.classList.remove('open');
+                toggleIcon.classList.remove('rotate-180');
+                toggleText.textContent = "更に詳しく解説";
+            } else {
+                detailWrapper.classList.add('open');
+                toggleIcon.classList.add('rotate-180');
+                toggleText.textContent = "解説を閉じる";
+            }
+        });
+
+        document.getElementById('next-btn').onclick = () => {
+            currentQuestion++;
+            if (currentQuestion < quizData.length) {
+                loadQuestion();
+            } else {
+                showResult();
+            }
+        };
+
+        function showResult() {
+            document.getElementById('quiz-container').classList.add('hidden');
+            const resultScreen = document.getElementById('result-screen');
+            resultScreen.classList.remove('hidden');
+            document.getElementById('final-score').textContent = score;
+            
+            let message = "";
+            if (score === 5) message = "素晴らしい語彙力です！言語問題の基礎は完璧に身についています。";
+            else if (score >= 3) message = "良い調子です。知らなかった熟語や用法は「更に詳しく解説」を読んでマスターしましょう。";
+            else message = "SPIの言語問題は、読書量よりも「解き方のパターン」を知ることが重要です。解説のコツを意識して復習しましょう。";
+            
+            document.getElementById('result-message').textContent = message;
+        }
+
+        window.onload = loadQuestion;
+    </script>
+</body>
+</html>
