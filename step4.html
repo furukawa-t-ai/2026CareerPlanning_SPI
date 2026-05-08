@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>SPI3 対策模擬テスト 第4回</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #f8fafc;
+        }
+        .fade-in {
+            animation: fadeIn 0.4s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* 詳細解説のアニメーション用 */
+        .expand-transition {
+            transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+        .expand-transition.open {
+            max-height: 500px; /* 十分な高さを確保 */
+            opacity: 1;
+        }
+        .detail-box {
+            background: rgba(255, 255, 255, 0.7);
+            border-left: 4px solid #f97316; /* Orange 500 */
+            padding: 12px 16px;
+            border-radius: 4px 8px 8px 4px;
+            margin-top: 12px;
+        }
+    </style>
+</head>
+<body class="min-h-screen py-8 px-4">
+    <div id="app" class="max-w-2xl mx-auto">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <div class="inline-block bg-orange-600 text-white text-xs font-bold px-3 py-1 rounded-full mb-2">全10回シリーズ</div>
+            <h1 class="text-3xl font-bold text-slate-800">SPI3 対策模擬テスト</h1>
+            <p class="text-lg font-medium text-orange-600 mt-1">【第4回】非言語・論理推論編</p>
+        </header>
+
+        <!-- Quiz Container -->
+        <div id="quiz-container" class="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 md:p-10 fade-in">
+            <!-- Progress -->
+            <div class="mb-8">
+                <div class="flex justify-between items-end mb-3">
+                    <span id="progress-text" class="text-slate-500 font-bold text-sm">QUESTION 1 / 5</span>
+                    <span id="score-text" class="text-orange-600 font-bold text-sm">正解数: 0</span>
+                </div>
+                <div class="w-full bg-slate-100 rounded-full h-3">
+                    <div id="progress-bar" class="bg-orange-500 h-3 rounded-full transition-all duration-500" style="width: 20%"></div>
+                </div>
+            </div>
+
+            <!-- Question Section -->
+            <div id="question-content">
+                <div id="category-badge" class="inline-block px-3 py-1 rounded-md text-xs font-bold mb-4 bg-slate-100 text-slate-600 tracking-wider"></div>
+                <h2 id="question-text" class="text-xl font-bold text-slate-800 mb-8 leading-relaxed whitespace-pre-wrap"></h2>
+                
+                <div id="options-container" class="grid grid-cols-1 gap-4">
+                    <!-- Options -->
+                </div>
+
+                <!-- Explanation Area -->
+                <div id="explanation-container" class="hidden mt-10 p-6 rounded-2xl border-2 fade-in">
+                    <div class="flex items-center mb-4">
+                        <div id="result-icon" class="mr-3"></div>
+                        <div id="result-badge" class="font-bold text-xl"></div>
+                    </div>
+                    
+                    <div class="bg-white/60 rounded-xl p-5 mb-6 shadow-sm">
+                        <!-- 簡潔な解説 -->
+                        <p id="short-explanation-text" class="text-slate-800 font-medium leading-relaxed"></p>
+                        
+                        <!-- 更に詳しくボタン -->
+                        <button id="toggle-detail-btn" class="mt-4 flex items-center text-sm font-bold text-orange-600 hover:text-orange-800 transition-colors focus:outline-none">
+                            <svg id="toggle-icon" class="w-4 h-4 mr-1 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            <span>更に詳しく解説</span>
+                        </button>
+
+                        <!-- 詳細な解説（初期状態は非表示） -->
+                        <div id="detailed-explanation-wrapper" class="expand-transition">
+                            <div class="detail-box">
+                                <p id="detailed-explanation-text" class="text-slate-700 text-sm leading-relaxed"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="next-btn" class="w-full py-4 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-900 transition-all active:scale-[0.98] shadow-lg shadow-slate-200">
+                        次の問題へ進む
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="result-screen" class="hidden bg-white rounded-3xl shadow-2xl border border-slate-100 p-10 text-center fade-in">
+            <div class="mb-6 inline-flex items-center justify-center w-20 h-20 bg-orange-50 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">第4回 終了！</h2>
+            <p class="text-slate-500 mb-8">お疲れ様でした。今回の論理推論スコアは...</p>
+            
+            <div class="relative inline-block mb-10">
+                <div class="text-7xl font-black text-orange-600">
+                    <span id="final-score">0</span><span class="text-3xl text-slate-300">/5</span>
+                </div>
+            </div>
+            
+            <p id="result-message" class="text-lg font-bold text-slate-700 mb-10 px-4"></p>
+            
+            <div class="space-y-3">
+                <button onclick="location.reload()" class="w-full py-4 bg-orange-600 text-white font-bold rounded-2xl hover:bg-orange-700 transition-all shadow-lg shadow-orange-200">
+                    もう一度挑戦
+                </button>
+                <p class="text-sm text-slate-400">次回の「第5回：非言語・場合の数と確率編」もお楽しみに！</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                category: "非言語：推論（順位）",
+                question: "P、Q、R、S、Tの5人が1列に並んでいます。以下の条件から確実に言える推論はどれですか。\n\n・PはRのすぐ前にいる。\n・QはSより前にいるが、一番前ではない。\n・Tは一番後ろ（5番目）である。",
+                options: [
+                    { text: "Pは1番目である", isCorrect: true },
+                    { text: "Qは2番目である", isCorrect: false },
+                    { text: "Rは3番目である", isCorrect: false },
+                    { text: "Sは4番目である", isCorrect: false }
+                ],
+                shortExplanation: "条件を整理すると、並び順は「P、R、Q、S、T」の1パターンに確定します。したがって「Pは1番目である」が確実に言えます。",
+                detailedExplanation: "<strong>【解法のコツ】確定している位置から埋めていく</strong>\n① Tは5番目なので、[〇, 〇, 〇, 〇, T]\n② PはRのすぐ前なので、[P, R] は隣り合うセットになります。\n③ QはSより前だが、1番目ではありません。\n\nもし [P, R] が2番目・3番目だとすると、1番目にQかSが入ることになります。\nしかし、Qは1番目ではなく、SはQより後ろなので矛盾します。\n\nしたがって、[P, R] は1番目・2番目に入ることが確定します。\n全体の配置は [P, R, Q, S, T] となり、正解は「Pは1番目」となります。"
+            },
+            {
+                category: "非言語：推論（集合・内訳）",
+                question: "ある30人のクラスで、犬を飼っている人は15人、猫を飼っている人は12人でした。また、どちらも飼っていない人は7人でした。犬と猫の両方を飼っている人は何人ですか。",
+                options: [
+                    { text: "2人", isCorrect: false },
+                    { text: "4人", isCorrect: true },
+                    { text: "5人", isCorrect: false },
+                    { text: "7人", isCorrect: false }
+                ],
+                shortExplanation: "少なくともどちらかを飼っている人は 30 - 7 = 23人 です。犬(15人)と猫(12人)を足すと 27人 になるため、はみ出した 4人 が「両方飼っている人」です。",
+                detailedExplanation: "<strong>【解法のコツ】ベン図をイメージして足し引きする</strong>\n① まず、クラス全員(30人)から「どちらも飼っていない人」(7人)を引きます。\n　30 - 7 = 23人 （犬か猫、少なくとも一方を飼っている人の合計）\n\n② 次に、犬を飼っている人(15人)と猫を飼っている人(12人)を単純に足します。\n　15 + 12 = 27人\n\nこの27人には「両方飼っている人」が2回（重複して）数えられています。\nしたがって、実際の人数(23人)からオーバーした分が「両方飼っている人」の数になります。\n　27 - 23 = 4人"
+            },
+            {
+                category: "非言語：推論（大小関係）",
+                question: "P〜Tの5人の身長について、以下のことが分かっています。\n\n・PはQより高い。\n・RはSより低いが、Qよりは高い。\n・TはPより高い。\n\nこのとき、確実に言えるものはどれですか。",
+                options: [
+                    { text: "Tは最も背が高い。", isCorrect: false },
+                    { text: "SはPより背が高い。", isCorrect: false },
+                    { text: "Qは最も背が低い。", isCorrect: true },
+                    { text: "Rは3番目に背が高い。", isCorrect: false }
+                ],
+                shortExplanation: "条件をまとめると、「T > P > Q」かつ「S > R > Q」となります。QはP、T、R、Sの4人全員よりも低いことがわかるため、Qが最も背が低いと確定します。",
+                detailedExplanation: "<strong>【解法のコツ】不等号（＞）を使って視覚化する</strong>\n条件を不等号で整理します。\n条件1：P > Q\n条件2：S > R > Q\n条件3：T > P\n\nこれらを組み合わせると、以下の2つのルートができます。\n・ルートA：T > P > Q\n・ルートB：S > R > Q\n\nPとR、TとSなどの大小関係は比較できないため、「誰が1番高いか（TかS）」は分かりません。しかし、すべてのルートの最下層にいる「Q」が最も背が低いことだけは確実に言えます。"
+            },
+            {
+                category: "非言語：推論（勝敗表）",
+                question: "A〜Dの4チームが総当たり戦を行いました。引き分けはありません。\n\n・Aは2勝1敗であった。\n・Bは全敗（0勝3敗）であった。\n・CはDに勝った。\n\nこの結果から確実に言える推論はどれですか。",
+                options: [
+                    { text: "CはAに勝った。", isCorrect: false },
+                    { text: "Cは2勝以上した。", isCorrect: true },
+                    { text: "Dの勝利数は1勝である。", isCorrect: false },
+                    { text: "AはDに勝った。", isCorrect: false }
+                ],
+                shortExplanation: "Bが全敗なので、CとDは必ずBに勝っています。CはDにも勝っているため、「少なくとも2勝（BとDから）」していることが確実に言えます。",
+                detailedExplanation: "<strong>【解法のコツ】勝敗表（マトリクス）の確定箇所を埋める</strong>\nBは全敗（0勝）なので、他のA、C、DはすべてBに1勝しています。\n\nここでCの成績に注目します。\n・条件「CはDに勝った」（1勝）\n・Bが全敗なので「CはBにも勝った」（1勝）\nこの時点で、Cは「2勝」していることが確定します。\n\nAとの対戦結果によって、Cが2勝1敗になるか全勝（3勝0敗）になるかは分かりませんが、「2勝以上した」ことは確実に言えます。"
+            },
+            {
+                category: "非言語：推論（真偽）",
+                question: "赤、青、黄の3つの箱があり、1つだけに当たりが入っています。箱には次のように書かれており、本当のことが書かれているのは【1つだけ】です。\n\n・赤の箱「当たりは青の箱にある」\n・青の箱「当たりはこの箱にはない」\n・黄の箱「当たりは赤の箱にはない」\n\n当たりが入っている箱はどれですか。",
+                options: [
+                    { text: "赤の箱", isCorrect: true },
+                    { text: "青の箱", isCorrect: false },
+                    { text: "黄の箱", isCorrect: false },
+                    { text: "該当する箱はない", isCorrect: false }
+                ],
+                shortExplanation: "当たりが赤・青・黄にある場合をそれぞれ仮定します。赤が当たりだと仮定したときのみ、真実を言っている箱が青の1つだけになり、条件と一致します。",
+                detailedExplanation: "<strong>【解法のコツ】1つずつ「当たり」と仮定して矛盾を探す</strong>\n\n① 「赤」が当たりの場合\n・赤「青にある」→ ウソ\n・青「青にはない」→ <strong>ホント</strong>\n・黄「赤にはない」→ ウソ\n※ホントが1つだけなので、条件に合致します！\n\n② 「青」が当たりの場合\n・赤「青にある」→ ホント\n・青「青にはない」→ ウソ\n・黄「赤にはない」→ ホント\n※ホントが2つになるため矛盾。\n\n③ 「黄」が当たりの場合\n・赤「青にある」→ ウソ\n・青「青にはない」→ ホント\n・黄「赤にはない」→ ホント\n※ホントが2つになるため矛盾。\n\nよって、条件を満たすのは「赤の箱」が当たりの場合のみです。"
+            }
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+        let isAnswered = false;
+
+        // 要素の取得
+        const toggleBtn = document.getElementById('toggle-detail-btn');
+        const detailWrapper = document.getElementById('detailed-explanation-wrapper');
+        const toggleIcon = document.getElementById('toggle-icon');
+        const toggleText = toggleBtn.querySelector('span');
+
+        function loadQuestion() {
+            isAnswered = false;
+            const data = quizData[currentQuestion];
+            
+            document.getElementById('category-badge').textContent = data.category;
+            document.getElementById('question-text').textContent = data.question;
+            document.getElementById('progress-text').textContent = `QUESTION ${currentQuestion + 1} / ${quizData.length}`;
+            document.getElementById('progress-bar').style.width = `${((currentQuestion + 1) / quizData.length) * 100}%`;
+            
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+            
+            data.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = "group w-full text-left p-5 border-2 border-slate-100 rounded-2xl hover:bg-orange-50 hover:border-orange-200 transition-all duration-200 focus:outline-none flex items-center";
+                btn.innerHTML = `
+                    <span class="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-slate-50 text-slate-400 rounded-full mr-4 font-bold group-hover:bg-orange-100 group-hover:text-orange-500 transition-colors">${String.fromCharCode(65 + index)}</span>
+                    <span class="text-slate-700 font-medium">${opt.text}</span>
+                `;
+                btn.onclick = () => selectOption(index);
+                optionsContainer.appendChild(btn);
+            });
+
+            // 解説エリアをリセットして隠す
+            document.getElementById('explanation-container').classList.add('hidden');
+            
+            // 更に詳しくボタンの状態リセット
+            detailWrapper.classList.remove('open');
+            toggleIcon.classList.remove('rotate-180');
+            toggleText.textContent = "更に詳しく解説";
+        }
+
+        function selectOption(index) {
+            if (isAnswered) return;
+            isAnswered = true;
+
+            const correctIndex = quizData[currentQuestion].options.findIndex(o => o.isCorrect);
+            const options = document.getElementById('options-container').children;
+
+            if (index === correctIndex) {
+                score++;
+                options[index].classList.replace('border-slate-100', 'border-green-500');
+                options[index].classList.add('bg-green-50');
+                showExplanation(true);
+            } else {
+                options[index].classList.replace('border-slate-100', 'border-red-500');
+                options[index].classList.add('bg-red-50');
+                options[correctIndex].classList.replace('border-slate-100', 'border-green-500');
+                options[correctIndex].classList.add('bg-green-50');
+                showExplanation(false);
+            }
+            document.getElementById('score-text').textContent = `正解数: ${score}`;
+        }
+
+        function showExplanation(isCorrect) {
+            const container = document.getElementById('explanation-container');
+            const badge = document.getElementById('result-badge');
+            const icon = document.getElementById('result-icon');
+            const shortText = document.getElementById('short-explanation-text');
+            const detailText = document.getElementById('detailed-explanation-text');
+            
+            container.classList.remove('hidden');
+            
+            if (isCorrect) {
+                container.className = "mt-10 p-6 rounded-2xl border-2 fade-in bg-green-50 border-green-100";
+                badge.textContent = "正解です！";
+                badge.className = "text-green-700 font-bold text-xl";
+                icon.innerHTML = '<div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white">✓</div>';
+            } else {
+                container.className = "mt-10 p-6 rounded-2xl border-2 fade-in bg-red-50 border-red-100";
+                badge.textContent = "不正解です...";
+                badge.className = "text-red-700 font-bold text-xl";
+                icon.innerHTML = '<div class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white">×</div>';
+            }
+            
+            // 改行コードを <br> に変換して挿入
+            shortText.innerHTML = quizData[currentQuestion].shortExplanation.replace(/\n/g, '<br>');
+            detailText.innerHTML = quizData[currentQuestion].detailedExplanation.replace(/\n/g, '<br>');
+        }
+
+        // アコーディオン（更に詳しく）の開閉ロジック
+        toggleBtn.addEventListener('click', () => {
+            const isOpen = detailWrapper.classList.contains('open');
+            if (isOpen) {
+                detailWrapper.classList.remove('open');
+                toggleIcon.classList.remove('rotate-180');
+                toggleText.textContent = "更に詳しく解説";
+            } else {
+                detailWrapper.classList.add('open');
+                toggleIcon.classList.add('rotate-180');
+                toggleText.textContent = "解説を閉じる";
+            }
+        });
+
+        document.getElementById('next-btn').onclick = () => {
+            currentQuestion++;
+            if (currentQuestion < quizData.length) {
+                loadQuestion();
+            } else {
+                showResult();
+            }
+        };
+
+        function showResult() {
+            document.getElementById('quiz-container').classList.add('hidden');
+            const resultScreen = document.getElementById('result-screen');
+            resultScreen.classList.remove('hidden');
+            document.getElementById('final-score').textContent = score;
+            
+            let message = "";
+            if (score === 5) message = "素晴らしい論理的思考力です！推論問題は完璧ですね。";
+            else if (score >= 3) message = "推論の基本は身についています。図や表を書いて整理するクセをつけると、さらにミスが減ります。";
+            else message = "推論問題は「仮説を立てて矛盾を探す」のが基本です。詳細な解説を読んで、論理の組み立て方をマスターしましょう。";
+            
+            document.getElementById('result-message').textContent = message;
+        }
+
+        window.onload = loadQuestion;
+    </script>
+</body>
+</html>
