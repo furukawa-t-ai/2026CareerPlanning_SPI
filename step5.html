@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>SPI3 対策模擬テスト 第5回</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #f8fafc;
+        }
+        .fade-in {
+            animation: fadeIn 0.4s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* 詳細解説のアニメーション用 */
+        .expand-transition {
+            transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+        .expand-transition.open {
+            max-height: 600px; /* 十分な高さを確保 */
+            opacity: 1;
+        }
+        .detail-box {
+            background: rgba(255, 255, 255, 0.7);
+            border-left: 4px solid #14b8a6; /* Teal 500 */
+            padding: 12px 16px;
+            border-radius: 4px 8px 8px 4px;
+            margin-top: 12px;
+        }
+        .math-text {
+            font-family: 'Times New Roman', serif;
+            font-weight: bold;
+            color: #0f766e; /* Teal 700 */
+        }
+    </style>
+</head>
+<body class="min-h-screen py-8 px-4">
+    <div id="app" class="max-w-2xl mx-auto">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <div class="inline-block bg-teal-600 text-white text-xs font-bold px-3 py-1 rounded-full mb-2">全10回シリーズ</div>
+            <h1 class="text-3xl font-bold text-slate-800">SPI3 対策模擬テスト</h1>
+            <p class="text-lg font-medium text-teal-600 mt-1">【第5回】非言語・場合の数と確率編</p>
+        </header>
+
+        <!-- Quiz Container -->
+        <div id="quiz-container" class="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 md:p-10 fade-in">
+            <!-- Progress -->
+            <div class="mb-8">
+                <div class="flex justify-between items-end mb-3">
+                    <span id="progress-text" class="text-slate-500 font-bold text-sm">QUESTION 1 / 5</span>
+                    <span id="score-text" class="text-teal-600 font-bold text-sm">正解数: 0</span>
+                </div>
+                <div class="w-full bg-slate-100 rounded-full h-3">
+                    <div id="progress-bar" class="bg-teal-500 h-3 rounded-full transition-all duration-500" style="width: 20%"></div>
+                </div>
+            </div>
+
+            <!-- Question Section -->
+            <div id="question-content">
+                <div id="category-badge" class="inline-block px-3 py-1 rounded-md text-xs font-bold mb-4 bg-slate-100 text-slate-600 tracking-wider"></div>
+                <h2 id="question-text" class="text-xl font-bold text-slate-800 mb-8 leading-relaxed whitespace-pre-wrap"></h2>
+                
+                <div id="options-container" class="grid grid-cols-1 gap-4">
+                    <!-- Options -->
+                </div>
+
+                <!-- Explanation Area -->
+                <div id="explanation-container" class="hidden mt-10 p-6 rounded-2xl border-2 fade-in">
+                    <div class="flex items-center mb-4">
+                        <div id="result-icon" class="mr-3"></div>
+                        <div id="result-badge" class="font-bold text-xl"></div>
+                    </div>
+                    
+                    <div class="bg-white/60 rounded-xl p-5 mb-6 shadow-sm">
+                        <!-- 簡潔な解説 -->
+                        <p id="short-explanation-text" class="text-slate-800 font-medium leading-relaxed"></p>
+                        
+                        <!-- 更に詳しくボタン -->
+                        <button id="toggle-detail-btn" class="mt-4 flex items-center text-sm font-bold text-teal-600 hover:text-teal-800 transition-colors focus:outline-none">
+                            <svg id="toggle-icon" class="w-4 h-4 mr-1 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            <span>更に詳しく解説</span>
+                        </button>
+
+                        <!-- 詳細な解説（初期状態は非表示） -->
+                        <div id="detailed-explanation-wrapper" class="expand-transition">
+                            <div class="detail-box">
+                                <p id="detailed-explanation-text" class="text-slate-700 text-sm leading-relaxed"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="next-btn" class="w-full py-4 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-900 transition-all active:scale-[0.98] shadow-lg shadow-slate-200">
+                        次の問題へ進む
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="result-screen" class="hidden bg-white rounded-3xl shadow-2xl border border-slate-100 p-10 text-center fade-in">
+            <div class="mb-6 inline-flex items-center justify-center w-20 h-20 bg-teal-50 rounded-full">
+                <!-- Icon for Teal Theme (Target/Accuracy concept) -->
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
+                </svg>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">第5回 終了！</h2>
+            <p class="text-slate-500 mb-8">お疲れ様でした。今回の場合の数・確率スコアは...</p>
+            
+            <div class="relative inline-block mb-10">
+                <div class="text-7xl font-black text-teal-600">
+                    <span id="final-score">0</span><span class="text-3xl text-slate-300">/5</span>
+                </div>
+            </div>
+            
+            <p id="result-message" class="text-lg font-bold text-slate-700 mb-10 px-4"></p>
+            
+            <div class="space-y-3">
+                <button onclick="location.reload()" class="w-full py-4 bg-teal-600 text-white font-bold rounded-2xl hover:bg-teal-700 transition-all shadow-lg shadow-teal-200">
+                    もう一度挑戦
+                </button>
+                <p class="text-sm text-slate-400">次回の「第6回：言語・長文読解編」もお楽しみに！</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                category: "非言語：場合の数（順列）",
+                question: "A、B、C、Dの4人が1列に並んで写真を撮ります。並び方は全部で何通りありますか。",
+                options: [
+                    { text: "12通り", isCorrect: false },
+                    { text: "16通り", isCorrect: false },
+                    { text: "24通り", isCorrect: true },
+                    { text: "64通り", isCorrect: false }
+                ],
+                shortExplanation: "4人を順番に並べるので、4!（4の階乗）を計算します。4 × 3 × 2 × 1 = 24通りです。",
+                detailedExplanation: "<strong>【解法のコツ】順番が関係あるものは「順列（P）」</strong>\n左から順番に人を配置していくイメージを持ちましょう。\n\n・1番左の位置には、4人のうち誰でも入れるので「<span class='math-text'>4通り</span>」\n・左から2番目には、残った3人のうち誰かが入るので「<span class='math-text'>3通り</span>」\n・左から3番目には、残った2人のうち誰かが入るので「<span class='math-text'>2通り</span>」\n・一番右は、最後に残った1人が自動的に決まるので「<span class='math-text'>1通り</span>」\n\nこれらは同時に起こる連続した行動なので、すべて掛け算します。\n<span class='math-text'>4 × 3 × 2 × 1 = 24通り</span> となります。"
+            },
+            {
+                category: "非言語：場合の数（組合せ）",
+                question: "5人の生徒の中から、文化祭の実行委員を「2人」選ぶ選び方は全部で何通りありますか。（※委員の役割に区別はありません）",
+                options: [
+                    { text: "10通り", isCorrect: true },
+                    { text: "15通り", isCorrect: false },
+                    { text: "20通り", isCorrect: false },
+                    { text: "25通り", isCorrect: false }
+                ],
+                shortExplanation: "選ぶだけで順番（役割）は関係ないため、「組合せ（C）」の計算を使います。₅C₂ = (5 × 4) ÷ (2 × 1) = 10通りです。",
+                detailedExplanation: "<strong>【解法のコツ】「P」と「C」の違いを見極める</strong>\n今回は「AさんとBさん」が選ばれるのと、「BさんとAさん」が選ばれるのは【同じ結果（重複）】とみなします。この場合は「組合せ（C）」を使います。\n\n① まず順番を気にして2人選ぶ計算をします。\n　<span class='math-text'>5 × 4 = 20通り</span>（順列: ₅P₂）\n② 次に、選んだ2人の「並び順」で割って重複をなくします。\n　<span class='math-text'>20 ÷ (2 × 1) = 10通り</span>\n\n公式では <span class='math-text'>₅C₂ = (5 × 4) / (2 × 1) = 10</span> と計算します。"
+            },
+            {
+                category: "非言語：確率の基本",
+                question: "1個のサイコロを振るとき、偶数の目が出る確率はどれくらいですか。",
+                options: [
+                    { text: "1/6", isCorrect: false },
+                    { text: "1/3", isCorrect: false },
+                    { text: "1/2", isCorrect: true },
+                    { text: "2/3", isCorrect: false }
+                ],
+                shortExplanation: "サイコロの目は全部で6通り、そのうち偶数は「2, 4, 6」の3通りです。3/6を約分して1/2となります。",
+                detailedExplanation: "<strong>【解法のコツ】確率の基本は「条件に合う数 ÷ 全部の数」</strong>\n確率はとてもシンプルです。まずは全体が何通りあるかを出します。\n\n① すべての場合の数\n　サイコロの目は 1, 2, 3, 4, 5, 6 の <span class='math-text'>6通り</span>\n② 条件に当てはまる場合の数\n　偶数の目は 2, 4, 6 の <span class='math-text'>3通り</span>\n\n確率 ＝ (②条件) ÷ (①全体)\n　<span class='math-text'>3 ÷ 6 ＝ 3/6</span>\nこれを約分（分母と分子を3で割る）して、<span class='math-text'>1/2</span> が正解です。"
+            },
+            {
+                category: "非言語：場合の数（組合せの応用）",
+                question: "男子4人、女子3人のグループから、男子2人と女子1人を代表として選ぶ選び方は何通りありますか。",
+                options: [
+                    { text: "12通り", isCorrect: false },
+                    { text: "18通り", isCorrect: true },
+                    { text: "24通り", isCorrect: false },
+                    { text: "36通り", isCorrect: false }
+                ],
+                shortExplanation: "男子の選び方（₄C₂）と、女子の選び方（₃C₁）をそれぞれ計算し、最後に掛け合わせます。6 × 3 = 18通りです。",
+                detailedExplanation: "<strong>【解法のコツ】別々に計算してから掛け算する</strong>\n「男子を選ぶアクション」と「女子を選ぶアクション」を分けて考えます。\n\n① 男子4人から2人を選ぶ\n　₄C₂ = <span class='math-text'>(4 × 3) / (2 × 1) = 6通り</span>\n② 女子3人から1人を選ぶ\n　₃C₁ = <span class='math-text'>3 / 1 = 3通り</span>\n\n男子の選び方1パターンに対して、女子の選び方が3通りずつ存在します。このように「〜して、かつ〜する」という場合は【掛け算】を使います。\n　<span class='math-text'>6 × 3 = 18通り</span> となります。"
+            },
+            {
+                category: "非言語：確率の応用",
+                question: "赤玉3個、白玉2個の合計5個が入っている袋から、同時に2個の玉を取り出すとき、2個とも「赤玉」である確率はどれくらいですか。",
+                options: [
+                    { text: "1/5", isCorrect: false },
+                    { text: "3/10", isCorrect: true },
+                    { text: "2/5", isCorrect: false },
+                    { text: "1/2", isCorrect: false }
+                ],
+                shortExplanation: "すべての取り出し方は ₅C₂ ＝ 10通り。そのうち、赤玉3個から2個を取り出すのは ₃C₂ ＝ 3通り。よって 3/10 です。",
+                detailedExplanation: "<strong>【解法のコツ】確率の式に「組合せ（C）」を当てはめる</strong>\nこれも基本は「条件に合う数 ÷ 全部の数」です。ただし、選ぶので「C」を使います。\n\n① すべての選び方\n玉は全部で5個。ここから2個選ぶので、\n　₅C₂ = <span class='math-text'>(5 × 4) / (2 × 1) = 10通り</span>\n\n② 条件に当てはまる選び方（2個とも赤）\n赤玉3個の中から2個を選ぶので、\n　₃C₂ = <span class='math-text'>(3 × 2) / (2 × 1) = 3通り</span>\n（※白玉は選ばないので計算に入れません）\n\n③ 確率にする\n　<span class='math-text'>3通り ÷ 10通り = 3/10</span>\nこれ以上約分できないので、これが正解となります。"
+            }
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+        let isAnswered = false;
+
+        // 要素の取得
+        const toggleBtn = document.getElementById('toggle-detail-btn');
+        const detailWrapper = document.getElementById('detailed-explanation-wrapper');
+        const toggleIcon = document.getElementById('toggle-icon');
+        const toggleText = toggleBtn.querySelector('span');
+
+        function loadQuestion() {
+            isAnswered = false;
+            const data = quizData[currentQuestion];
+            
+            document.getElementById('category-badge').textContent = data.category;
+            document.getElementById('question-text').textContent = data.question;
+            document.getElementById('progress-text').textContent = `QUESTION ${currentQuestion + 1} / ${quizData.length}`;
+            document.getElementById('progress-bar').style.width = `${((currentQuestion + 1) / quizData.length) * 100}%`;
+            
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+            
+            data.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = "group w-full text-left p-5 border-2 border-slate-100 rounded-2xl hover:bg-teal-50 hover:border-teal-200 transition-all duration-200 focus:outline-none flex items-center";
+                btn.innerHTML = `
+                    <span class="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-slate-50 text-slate-400 rounded-full mr-4 font-bold group-hover:bg-teal-100 group-hover:text-teal-500 transition-colors">${String.fromCharCode(65 + index)}</span>
+                    <span class="text-slate-700 font-medium">${opt.text}</span>
+                `;
+                btn.onclick = () => selectOption(index);
+                optionsContainer.appendChild(btn);
+            });
+
+            // 解説エリアをリセットして隠す
+            document.getElementById('explanation-container').classList.add('hidden');
+            
+            // 更に詳しくボタンの状態リセット
+            detailWrapper.classList.remove('open');
+            toggleIcon.classList.remove('rotate-180');
+            toggleText.textContent = "更に詳しく解説";
+        }
+
+        function selectOption(index) {
+            if (isAnswered) return;
+            isAnswered = true;
+
+            const correctIndex = quizData[currentQuestion].options.findIndex(o => o.isCorrect);
+            const options = document.getElementById('options-container').children;
+
+            if (index === correctIndex) {
+                score++;
+                options[index].classList.replace('border-slate-100', 'border-green-500');
+                options[index].classList.add('bg-green-50');
+                showExplanation(true);
+            } else {
+                options[index].classList.replace('border-slate-100', 'border-red-500');
+                options[index].classList.add('bg-red-50');
+                options[correctIndex].classList.replace('border-slate-100', 'border-green-500');
+                options[correctIndex].classList.add('bg-green-50');
+                showExplanation(false);
+            }
+            document.getElementById('score-text').textContent = `正解数: ${score}`;
+        }
+
+        function showExplanation(isCorrect) {
+            const container = document.getElementById('explanation-container');
+            const badge = document.getElementById('result-badge');
+            const icon = document.getElementById('result-icon');
+            const shortText = document.getElementById('short-explanation-text');
+            const detailText = document.getElementById('detailed-explanation-text');
+            
+            container.classList.remove('hidden');
+            
+            if (isCorrect) {
+                container.className = "mt-10 p-6 rounded-2xl border-2 fade-in bg-green-50 border-green-100";
+                badge.textContent = "正解です！";
+                badge.className = "text-green-700 font-bold text-xl";
+                icon.innerHTML = '<div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white">✓</div>';
+            } else {
+                container.className = "mt-10 p-6 rounded-2xl border-2 fade-in bg-red-50 border-red-100";
+                badge.textContent = "不正解です...";
+                badge.className = "text-red-700 font-bold text-xl";
+                icon.innerHTML = '<div class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white">×</div>';
+            }
+            
+            // 改行コードを <br> に変換して挿入
+            shortText.innerHTML = quizData[currentQuestion].shortExplanation.replace(/\n/g, '<br>');
+            detailText.innerHTML = quizData[currentQuestion].detailedExplanation.replace(/\n/g, '<br>');
+        }
+
+        // アコーディオン（更に詳しく）の開閉ロジック
+        toggleBtn.addEventListener('click', () => {
+            const isOpen = detailWrapper.classList.contains('open');
+            if (isOpen) {
+                detailWrapper.classList.remove('open');
+                toggleIcon.classList.remove('rotate-180');
+                toggleText.textContent = "更に詳しく解説";
+            } else {
+                detailWrapper.classList.add('open');
+                toggleIcon.classList.add('rotate-180');
+                toggleText.textContent = "解説を閉じる";
+            }
+        });
+
+        document.getElementById('next-btn').onclick = () => {
+            currentQuestion++;
+            if (currentQuestion < quizData.length) {
+                loadQuestion();
+            } else {
+                showResult();
+            }
+        };
+
+        function showResult() {
+            document.getElementById('quiz-container').classList.add('hidden');
+            const resultScreen = document.getElementById('result-screen');
+            resultScreen.classList.remove('hidden');
+            document.getElementById('final-score').textContent = score;
+            
+            let message = "";
+            if (score === 5) message = "素晴らしい！苦手な人が多い確率分野ですが、本質をしっかり理解できています。";
+            else if (score >= 3) message = "良い調子です！P（順列）とC（組合せ）の使い分けをもう少し復習すれば完璧になります。";
+            else message = "確率・場合の数は「掛け算と足し算の使い分け」がカギです。詳細解説のステップを何度も読み返して慣れていきましょう。";
+            
+            document.getElementById('result-message').textContent = message;
+        }
+
+        window.onload = loadQuestion;
+    </script>
+</body>
+</html>
