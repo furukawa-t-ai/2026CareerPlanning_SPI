@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>SPI3 対策模擬テスト 第6回</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #f8fafc;
+        }
+        .fade-in {
+            animation: fadeIn 0.4s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* 詳細解説のアニメーション用 */
+        .expand-transition {
+            transition: max-height 0.4s ease-in-out, opacity 0.4s ease-in-out;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+        .expand-transition.open {
+            max-height: 800px; /* 長文解説用に少し高さを増やす */
+            opacity: 1;
+        }
+        .detail-box {
+            background: rgba(255, 255, 255, 0.7);
+            border-left: 4px solid #2563eb; /* Blue 600 */
+            padding: 16px;
+            border-radius: 4px 8px 8px 4px;
+            margin-top: 12px;
+        }
+        .highlight {
+            background: linear-gradient(transparent 60%, #bfdbfe 60%);
+            font-weight: bold;
+            color: #1e3a8a;
+        }
+        .reading-text {
+            background-color: #f1f5f9;
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 24px;
+            line-height: 1.8;
+        }
+    </style>
+</head>
+<body class="min-h-screen py-8 px-4">
+    <div id="app" class="max-w-2xl mx-auto">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <div class="inline-block bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full mb-2">全10回シリーズ</div>
+            <h1 class="text-3xl font-bold text-slate-800">SPI3 対策模擬テスト</h1>
+            <p class="text-lg font-medium text-blue-600 mt-1">【第6回】言語・長文読解編</p>
+        </header>
+
+        <!-- Quiz Container -->
+        <div id="quiz-container" class="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 md:p-10 fade-in">
+            <!-- Progress -->
+            <div class="mb-8">
+                <div class="flex justify-between items-end mb-3">
+                    <span id="progress-text" class="text-slate-500 font-bold text-sm">QUESTION 1 / 5</span>
+                    <span id="score-text" class="text-blue-600 font-bold text-sm">正解数: 0</span>
+                </div>
+                <div class="w-full bg-slate-100 rounded-full h-3">
+                    <div id="progress-bar" class="bg-blue-500 h-3 rounded-full transition-all duration-500" style="width: 20%"></div>
+                </div>
+            </div>
+
+            <!-- Question Section -->
+            <div id="question-content">
+                <div id="category-badge" class="inline-block px-3 py-1 rounded-md text-xs font-bold mb-4 bg-slate-100 text-slate-600 tracking-wider"></div>
+                <div id="question-text" class="text-lg font-medium text-slate-800 mb-8 whitespace-pre-wrap"></div>
+                
+                <div id="options-container" class="grid grid-cols-1 gap-4">
+                    <!-- Options -->
+                </div>
+
+                <!-- Explanation Area -->
+                <div id="explanation-container" class="hidden mt-10 p-6 rounded-2xl border-2 fade-in">
+                    <div class="flex items-center mb-4">
+                        <div id="result-icon" class="mr-3"></div>
+                        <div id="result-badge" class="font-bold text-xl"></div>
+                    </div>
+                    
+                    <div class="bg-white/60 rounded-xl p-5 mb-6 shadow-sm">
+                        <!-- 簡潔な解説 -->
+                        <p id="short-explanation-text" class="text-slate-800 font-medium leading-relaxed"></p>
+                        
+                        <!-- 更に詳しくボタン -->
+                        <button id="toggle-detail-btn" class="mt-4 flex items-center text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors focus:outline-none">
+                            <svg id="toggle-icon" class="w-4 h-4 mr-1 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            <span>更に詳しく解説（解法のプロセス）</span>
+                        </button>
+
+                        <!-- 詳細な解説（初期状態は非表示） -->
+                        <div id="detailed-explanation-wrapper" class="expand-transition">
+                            <div class="detail-box">
+                                <div id="detailed-explanation-text" class="text-slate-700 text-sm leading-relaxed space-y-3"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="next-btn" class="w-full py-4 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-900 transition-all active:scale-[0.98] shadow-lg shadow-slate-200">
+                        次の問題へ進む
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="result-screen" class="hidden bg-white rounded-3xl shadow-2xl border border-slate-100 p-10 text-center fade-in">
+            <div class="mb-6 inline-flex items-center justify-center w-20 h-20 bg-blue-50 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">第6回 終了！</h2>
+            <p class="text-slate-500 mb-8">お疲れ様でした。今回の長文読解スコアは...</p>
+            
+            <div class="relative inline-block mb-10">
+                <div class="text-7xl font-black text-blue-600">
+                    <span id="final-score">0</span><span class="text-3xl text-slate-300">/5</span>
+                </div>
+            </div>
+            
+            <p id="result-message" class="text-lg font-bold text-slate-700 mb-10 px-4"></p>
+            
+            <div class="space-y-3">
+                <button onclick="location.reload()" class="w-full py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">
+                    もう一度挑戦
+                </button>
+                <p class="text-sm text-slate-400">次回の「第7回：非言語・図表の読み取り編」もお楽しみに！</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                category: "言語：長文読解（空欄補充）",
+                question: "次の文章の（　）に入る最も適切な接続詞を選びなさい。<br><br><div class='reading-text'>近年、リモートワークが普及し、場所を選ばない働き方が可能になった。（　　　）、対面でのコミュニケーションが減少したことで、チーム内の連帯感維持が新たな課題となっている。</div>",
+                options: [
+                    { text: "しかし", isCorrect: true },
+                    { text: "つまり", isCorrect: false },
+                    { text: "したがって", isCorrect: false },
+                    { text: "例えば", isCorrect: false }
+                ],
+                shortExplanation: "前文でリモートワークの「メリット」を述べ、後文で「デメリット（課題）」を述べているため、逆接の接続詞が入ります。",
+                detailedExplanation: "<p><strong>【解法のプロセス：直前・直後の関係を見抜く】</strong></p><p>空欄補充は、空欄の直前と直後の一文だけを抜き出して比較します。</p><p>・直前：「場所を選ばない働き方が可能になった」＝ <span class='highlight'>プラス（＋）の内容</span><br>・直後：「連帯感維持が新たな課題となっている」＝ <span class='highlight'>マイナス（－）の内容</span></p><p>プラスからマイナスへと意味が逆転しているため、逆接の「しかし」「だが」などが入るのが論理的です。<br>× つまり（換言・まとめ）<br>× したがって（順接・結果）</p>"
+            },
+            {
+                category: "言語：長文読解（内容合致）",
+                question: "次の文章を読み、内容と合致するものを一つ選びなさい。<br><br><div class='reading-text'>日本における食品ロスは、家庭から出るものと事業所から出るものに大別される。最新の調査では、全体量は減少傾向にあるものの、依然として事業系ロスが全体の半分以上を占めていることが判明した。特に外食産業での食べ残しが課題となっている。</div>",
+                options: [
+                    { text: "家庭系食品ロスは、事業系ロスよりも多い。", isCorrect: false },
+                    { text: "食品ロスの全体量は、過去と比較して増え続けている。", isCorrect: false },
+                    { text: "食品ロスの大半は、外食産業以外の家庭で発生している。", isCorrect: false },
+                    { text: "事業系食品ロスは、全体の過半数を占めている。", isCorrect: true }
+                ],
+                shortExplanation: "本文中の「事業系ロスが全体の半分以上を占めている」という一文と、正解の選択肢の「全体の過半数を占めている」が合致します。",
+                detailedExplanation: "<p><strong>【解法のプロセス：間違い選択肢の「罠」に気づく】</strong></p><p>SPIの内容合致問題には、誤答のパターンがあります。照らし合わせてみましょう。</p><p>・家庭系ロスは、事業系より多い<br>→ <span class='text-red-600 font-bold'>【逆転の罠】</span> 本文では事業系が「半分以上」なので、事業系＞家庭系です。</p><p>・全体量は増え続けている<br>→ <span class='text-red-600 font-bold'>【正反対の罠】</span> 本文には「減少傾向にある」と明記されています。</p><p>・大半は家庭で発生している<br>→ <span class='text-red-600 font-bold'>【逆転の罠】</span> 事業系が半分以上（過半数）なので、大半は事業系です。</p><p>選択肢の「過半数」は、本文の「半分以上」の言い換え表現であり、これが正解となります。</p>"
+            },
+            {
+                category: "言語：長文読解（空欄補充）",
+                question: "次の文章の空欄に入れるのに最もふさわしい言葉を選びなさい。<br><br><div class='reading-text'>消費者の購買行動は、SNSの普及により劇的に変化した。以前は企業が発信する情報が主導権を握っていたが、現在は（　　　）によるリアルな評価が、購買の意思決定を左右する大きな要因となっている。</div>",
+                options: [
+                    { text: "第三者の専門家", isCorrect: false },
+                    { text: "一般ユーザー", isCorrect: true },
+                    { text: "広告代理店", isCorrect: false },
+                    { text: "政府機関", isCorrect: false }
+                ],
+                shortExplanation: "「以前は企業」と対比されている点と、「SNSのリアルな評価」という文脈から、一般ユーザーが入るのが最も自然です。",
+                detailedExplanation: "<p><strong>【解法のプロセス：対比構造に注目する】</strong></p><p>文章の構造を整理すると、以下のようになります。<br>・<span class='highlight'>以前＝企業側</span> の発信（主導権）<br>・<span class='highlight'>現在＝（空欄）側</span> の発信（主導権）</p><p>「企業（売り手）」と対になる言葉は「消費者（買い手）」です。また、「SNSの普及によるリアルな評価」というキーワードからも、専門家や政府機関ではなく「一般ユーザー」の口コミを指していることが論理的に導き出せます。</p>"
+            },
+            {
+                category: "言語：長文読解（不一致選択）",
+                question: "次の文章の内容と【一致しないもの】を一つ選びなさい。<br><br><div class='reading-text'>サブスクリプション型サービスは、所有から利用へという価値観の変化を捉え、急速に拡大した。低額な月額料金で多様なコンテンツを楽しめるのが利点だが、利用頻度が低い月でも料金が発生するため、解約し忘れによる無駄な支出も問題視されている。</div>",
+                options: [
+                    { text: "サブスクリプションは、所有よりも利用を重視する考え方に適している。", isCorrect: false },
+                    { text: "サービスの利用頻度が低くても、一定の料金を支払う必要がある。", isCorrect: false },
+                    { text: "一度も利用しなかった月は、自動的に料金が返金される仕組みがある。", isCorrect: true },
+                    { text: "安価な設定で多種多様なコンテンツに触れられるのが、このサービスの強みである。", isCorrect: false }
+                ],
+                shortExplanation: "「一致しないもの（誤り）」を選ぶ問題です。本文に「自動的に返金される」とは一切書かれていないため、これが不一致となります。",
+                detailedExplanation: "<p><strong>【解法のプロセス：未記載（書かれていないこと）を見破る】</strong></p><p>自分の常識や希望的観測を捨て、<span class='highlight'>「本文にそれが書いてあるか」</span>だけで判断します。</p><p>× 一度も利用しなかったら、返金される<br>→ 本文には「利用頻度が低い月でも料金が発生する」「無駄な支出が問題視されている」と書かれており、<span class='text-red-600 font-bold'>返金されるとは一言も書かれていません。</span>むしろ本文の内容と矛盾しています。</p><p>他の3つの選択肢は、すべて本文の記述（「所有から利用へ」「多様なコンテンツを楽しめる」等）と合致しています。</p>"
+            },
+            {
+                category: "言語：長文読解（文章整序）",
+                question: "次の文章を論理的に繋がるように並べ替えたとき、【3番目】に来るものを選びなさい。<br><br><div class='reading-text'>ア：その結果、希少価値が高まり価格が高騰する。<br>イ：ある特定の農産物が不作となった。<br>ウ：需要に対して供給が大幅に不足するからだ。<br>エ：この現象は、市場経済の基本原理で説明できる。</div>",
+                options: [
+                    { text: "ア", isCorrect: false },
+                    { text: "イ", isCorrect: false },
+                    { text: "ウ", isCorrect: true },
+                    { text: "エ", isCorrect: false }
+                ],
+                shortExplanation: "正しい順序は「イ → エ → ウ → ア」です。したがって3番目に来るのは「ウ」となります。",
+                detailedExplanation: "<p><strong>【解法のプロセス：指示語と接続詞でパズルを解く】</strong></p><p>文章を並べ替える際は、「きっかけ」→「説明」→「結果」の構造を意識します。</p><p>① 最初の文を探す<br>一番具体的な事象の発生を述べている <span class='highlight'>イ（不作となった）</span> が導入です。</p><p>② 指示語に注目する<br>エの「この現象」とは、イの不作を指しています。よって <span class='highlight'>イ → エ</span> と繋がります。</p><p>③ 理由と結果をセットにする<br>ウの末尾「〜からだ」は理由を説明しています。アの先頭「その結果」は結論です。<br>原理を説明する理由（ウ）を述べた後、結果（ア）に至るのが自然なため、<span class='highlight'>ウ → ア</span> となります。</p><p>全体は【 イ → エ → ウ → ア 】となり、3番目は「ウ」です。</p>"
+            }
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+        let isAnswered = false;
+
+        // 要素の取得
+        const toggleBtn = document.getElementById('toggle-detail-btn');
+        const detailWrapper = document.getElementById('detailed-explanation-wrapper');
+        const toggleIcon = document.getElementById('toggle-icon');
+        const toggleText = toggleBtn.querySelector('span');
+
+        function loadQuestion() {
+            isAnswered = false;
+            const data = quizData[currentQuestion];
+            
+            document.getElementById('category-badge').textContent = data.category;
+            // 読みやすいようにHTMLとしてパースする
+            document.getElementById('question-text').innerHTML = data.question;
+            document.getElementById('progress-text').textContent = `QUESTION ${currentQuestion + 1} / ${quizData.length}`;
+            document.getElementById('progress-bar').style.width = `${((currentQuestion + 1) / quizData.length) * 100}%`;
+            
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+            
+            data.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = "group w-full text-left p-5 border-2 border-slate-100 rounded-2xl hover:bg-blue-50 hover:border-blue-200 transition-all duration-200 focus:outline-none flex items-center";
+                btn.innerHTML = `
+                    <span class="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-slate-50 text-slate-400 rounded-full mr-4 font-bold group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors">${String.fromCharCode(65 + index)}</span>
+                    <span class="text-slate-700 font-medium">${opt.text}</span>
+                `;
+                btn.onclick = () => selectOption(index);
+                optionsContainer.appendChild(btn);
+            });
+
+            // 解説エリアをリセットして隠す
+            document.getElementById('explanation-container').classList.add('hidden');
+            
+            // 更に詳しくボタンの状態リセット
+            detailWrapper.classList.remove('open');
+            toggleIcon.classList.remove('rotate-180');
+            toggleText.textContent = "更に詳しく解説（解法のプロセス）";
+        }
+
+        function selectOption(index) {
+            if (isAnswered) return;
+            isAnswered = true;
+
+            const correctIndex = quizData[currentQuestion].options.findIndex(o => o.isCorrect);
+            const options = document.getElementById('options-container').children;
+
+            if (index === correctIndex) {
+                score++;
+                options[index].classList.replace('border-slate-100', 'border-green-500');
+                options[index].classList.add('bg-green-50');
+                showExplanation(true);
+            } else {
+                options[index].classList.replace('border-slate-100', 'border-red-500');
+                options[index].classList.add('bg-red-50');
+                options[correctIndex].classList.replace('border-slate-100', 'border-green-500');
+                options[correctIndex].classList.add('bg-green-50');
+                showExplanation(false);
+            }
+            document.getElementById('score-text').textContent = `正解数: ${score}`;
+        }
+
+        function showExplanation(isCorrect) {
+            const container = document.getElementById('explanation-container');
+            const badge = document.getElementById('result-badge');
+            const icon = document.getElementById('result-icon');
+            const shortText = document.getElementById('short-explanation-text');
+            const detailText = document.getElementById('detailed-explanation-text');
+            
+            container.classList.remove('hidden');
+            
+            if (isCorrect) {
+                container.className = "mt-10 p-6 rounded-2xl border-2 fade-in bg-green-50 border-green-100";
+                badge.textContent = "正解です！";
+                badge.className = "text-green-700 font-bold text-xl";
+                icon.innerHTML = '<div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white">✓</div>';
+            } else {
+                container.className = "mt-10 p-6 rounded-2xl border-2 fade-in bg-red-50 border-red-100";
+                badge.textContent = "不正解です...";
+                badge.className = "text-red-700 font-bold text-xl";
+                icon.innerHTML = '<div class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white">×</div>';
+            }
+            
+            shortText.innerHTML = quizData[currentQuestion].shortExplanation;
+            detailText.innerHTML = quizData[currentQuestion].detailedExplanation;
+        }
+
+        // アコーディオン（更に詳しく）の開閉ロジック
+        toggleBtn.addEventListener('click', () => {
+            const isOpen = detailWrapper.classList.contains('open');
+            if (isOpen) {
+                detailWrapper.classList.remove('open');
+                toggleIcon.classList.remove('rotate-180');
+                toggleText.textContent = "更に詳しく解説（解法のプロセス）";
+            } else {
+                detailWrapper.classList.add('open');
+                toggleIcon.classList.add('rotate-180');
+                toggleText.textContent = "解説を閉じる";
+            }
+        });
+
+        document.getElementById('next-btn').onclick = () => {
+            currentQuestion++;
+            if (currentQuestion < quizData.length) {
+                loadQuestion();
+            } else {
+                showResult();
+            }
+        };
+
+        function showResult() {
+            document.getElementById('quiz-container').classList.add('hidden');
+            const resultScreen = document.getElementById('result-screen');
+            resultScreen.classList.remove('hidden');
+            document.getElementById('final-score').textContent = score;
+            
+            let message = "";
+            if (score === 5) message = "素晴らしい読解力です！「本文を根拠に解く」という基本が完璧に身についています。";
+            else if (score >= 3) message = "合格ラインです。間違えた問題は、詳細解説の「解法のプロセス」を読んで罠のパターンを覚えましょう。";
+            else message = "長文読解はなんとなくではなく、物理的に「根拠を探す」ゲームです。解説を読んで解き方のコツを掴んでください。";
+            
+            document.getElementById('result-message').textContent = message;
+        }
+
+        window.onload = loadQuestion;
+    </script>
+</body>
+</html>
