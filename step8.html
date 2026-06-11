@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>SPI3 対策模擬テスト 第8回</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #f8fafc;
+        }
+        .fade-in {
+            animation: fadeIn 0.4s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* 詳細解説のアニメーション用 */
+        .expand-transition {
+            transition: max-height 0.4s ease-in-out, opacity 0.4s ease-in-out;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+        .expand-transition.open {
+            max-height: 800px;
+            opacity: 1;
+        }
+        .detail-box {
+            background: rgba(255, 255, 255, 0.7);
+            border-left: 4px solid #e11d48; /* Rose 600 */
+            padding: 16px;
+            border-radius: 4px 8px 8px 4px;
+            margin-top: 12px;
+        }
+        .highlight {
+            background: linear-gradient(transparent 60%, #fecdd3 60%); /* Rose 200 */
+            font-weight: bold;
+            color: #881337; /* Rose 900 */
+        }
+        .math-text {
+            font-family: 'Times New Roman', serif;
+            font-weight: bold;
+            color: #be123c; /* Rose 700 */
+            letter-spacing: 0.05em;
+        }
+        .speed-tip {
+            display: inline-block;
+            background-color: #ffe4e6; /* Rose 100 */
+            color: #e11d48; /* Rose 600 */
+            font-size: 0.75rem;
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            margin-bottom: 8px;
+        }
+        .stopwatch-font {
+            font-family: 'Courier New', Courier, monospace;
+        }
+    </style>
+</head>
+<body class="min-h-screen py-8 px-4">
+    <div id="app" class="max-w-2xl mx-auto">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <div class="inline-block bg-rose-600 text-white text-xs font-bold px-3 py-1 rounded-full mb-2">全10回シリーズ</div>
+            <h1 class="text-3xl font-bold text-slate-800">SPI3 対策模擬テスト</h1>
+            <p class="text-lg font-medium text-rose-600 mt-1">【第8回】実践・スピード強化編</p>
+            <p id="round-indicator" class="text-sm font-bold text-rose-400 mt-2">ROUND 1 / 3</p>
+        </header>
+
+        <!-- Quiz Container -->
+        <div id="quiz-container" class="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 md:p-10 fade-in">
+            <!-- Progress -->
+            <div class="mb-6">
+                <div class="flex justify-between items-end mb-3">
+                    <span id="progress-text" class="text-slate-500 font-bold text-sm">QUESTION 1 / 5</span>
+                    <span id="score-text" class="text-rose-600 font-bold text-sm">正解数: 0</span>
+                </div>
+                <div class="w-full bg-slate-100 rounded-full h-3">
+                    <div id="progress-bar" class="bg-rose-500 h-3 rounded-full transition-all duration-500" style="width: 20%"></div>
+                </div>
+            </div>
+
+            <!-- Timer Section (カウントアップ) -->
+            <div id="timer-container" class="mb-8 flex justify-center items-center">
+                <div class="bg-slate-800 text-rose-400 px-6 py-3 rounded-xl shadow-inner border border-slate-700 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span class="text-sm font-bold text-slate-300 mr-4">TIME</span>
+                    <span id="timer-display" class="stopwatch-font font-black text-3xl tracking-wider">0.0s</span>
+                </div>
+            </div>
+
+            <!-- Question Section -->
+            <div id="question-content">
+                <div id="category-badge" class="inline-block px-3 py-1 rounded-md text-xs font-bold mb-4 bg-slate-100 text-slate-600 tracking-wider"></div>
+                <div id="question-text" class="text-xl font-bold text-slate-800 mb-6 leading-relaxed whitespace-pre-wrap"></div>
+                
+                <div id="options-container" class="grid grid-cols-1 gap-4">
+                    <!-- Options -->
+                </div>
+
+                <!-- Explanation Area -->
+                <div id="explanation-container" class="hidden mt-10 p-6 rounded-2xl border-2 fade-in">
+                    <div class="flex items-center mb-4">
+                        <div id="result-icon" class="mr-3"></div>
+                        <div id="result-badge" class="font-bold text-xl"></div>
+                        <div id="time-taken-badge" class="ml-auto bg-slate-100 text-slate-600 text-sm font-bold px-3 py-1 rounded-full"></div>
+                    </div>
+                    
+                    <div class="bg-white/60 rounded-xl p-5 mb-6 shadow-sm">
+                        <!-- 簡潔な解説 -->
+                        <p id="short-explanation-text" class="text-slate-800 font-medium leading-relaxed"></p>
+                        
+                        <!-- 更に詳しくボタン -->
+                        <button id="toggle-detail-btn" class="mt-4 flex items-center text-sm font-bold text-rose-600 hover:text-rose-800 transition-colors focus:outline-none">
+                            <svg id="toggle-icon" class="w-4 h-4 mr-1 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            <span>スピード解法のテクニックを見る</span>
+                        </button>
+
+                        <!-- 詳細な解説（初期状態は非表示） -->
+                        <div id="detailed-explanation-wrapper" class="expand-transition">
+                            <div class="detail-box">
+                                <div id="detailed-explanation-text" class="text-slate-700 text-sm leading-relaxed space-y-3"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="next-btn" class="w-full py-4 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-900 transition-all active:scale-[0.98] shadow-lg shadow-slate-200">
+                        次の問題へ進む
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="result-screen" class="hidden bg-white rounded-3xl shadow-2xl border border-slate-100 p-8 md:p-10 text-center fade-in">
+            <div class="mb-4 inline-flex items-center justify-center w-20 h-20 bg-rose-50 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">ラウンド終了！</h2>
+            
+            <div class="relative inline-block mb-6">
+                <div class="text-6xl font-black text-rose-600">
+                    <span id="final-score">0</span><span class="text-3xl text-slate-300">/5</span>
+                </div>
+            </div>
+
+            <!-- Time Details Section -->
+            <div class="bg-slate-50 rounded-2xl p-6 mb-6 text-left border border-slate-100">
+                <h3 class="font-bold text-slate-800 mb-3 border-b pb-2 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    タイムレポート
+                </h3>
+                <div id="time-details" class="space-y-1 mb-4">
+                    <!-- JS will inject question times here -->
+                </div>
+                
+                <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                    <p class="text-sm text-blue-800 font-medium">
+                        💡 <b>SPIの理想タイム</b>：非言語は1問あたり約40秒、言語は約30秒が理想とされています。5問の目標合計タイムは <b>約150秒〜200秒（2.5分〜3分強）</b> です。
+                    </p>
+                </div>
+            </div>
+            
+            <p id="result-message" class="text-lg font-bold text-slate-700 mb-6 px-4"></p>
+
+            <div class="space-y-4">
+                <button id="retry-btn" class="w-full py-4 bg-rose-600 text-white font-bold text-lg rounded-2xl hover:bg-rose-700 transition-all shadow-lg shadow-rose-200">
+                    ROUND 2 へ挑戦！
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全15問（3ラウンド分）のプール
+        const allQuestions = [
+            // --- ROUND 1 ---
+            {
+                category: "非言語：計算の工夫（暗算）",
+                question: "次の計算をしなさい。\n\n198 × 25",
+                options: [
+                    { text: "4,850", isCorrect: false },
+                    { text: "4,950", isCorrect: true },
+                    { text: "5,000", isCorrect: false },
+                    { text: "5,050", isCorrect: false }
+                ],
+                shortExplanation: "198を「200 - 2」に分解して計算します。(200 × 25) - (2 × 25) = 5000 - 50 = 4,950 です。",
+                detailedExplanation: "<span class='speed-tip'>タイムロス回避</span><p><strong>【まともに筆算をしてはいけない問題】</strong></p><p>SPIで「198」や「99」など、<span class='highlight'>キリの良い数字に近い数</span>が出てきたら、必ず引き算の形に分解して暗算します。</p><p>① 198 を (200 - 2) と考える<br>② 分配法則を使う<br><span class='math-text'>(200 - 2) × 25<br>＝ (200 × 25) - (2 × 25)<br>＝ 5000 - 50<br>＝ 4950</span></p><p>筆算を書く時間を10秒以上短縮でき、計算ミスも防げます。</p>"
+            },
+            {
+                category: "非言語：割合の速算",
+                question: "定価 3,200円の商品を、15％引きで購入しました。支払った金額はいくらですか。",
+                options: [
+                    { text: "2,680円", isCorrect: false },
+                    { text: "2,720円", isCorrect: true },
+                    { text: "2,880円", isCorrect: false },
+                    { text: "3,040円", isCorrect: false }
+                ],
+                shortExplanation: "15%引きを「10%引き ＋ 5%引き」と考えます。320円(10%) ＋ 160円(5%) ＝ 480円引き。3200 - 480 = 2,720円です。",
+                detailedExplanation: "<span class='speed-tip'>10%分割テクニック</span><p><strong>【×0.85の掛け算はしない】</strong></p><p>3200 × 0.85 を筆算するのは時間がかかります。<span class='highlight'>割合は「10%」と「1%」を基準にブロックで組み立てる</span>のが最速です。</p><p>① 10% を出す（0を1つ取るだけ）<br>　3200円 の 10% ＝ <span class='math-text'>320円</span></p><p>② 5% を出す（10%の半分）<br>　320円 ÷ 2 ＝ <span class='math-text'>160円</span></p><p>③ 合計して引く<br>　15% ＝ 320 ＋ 160 ＝ <span class='math-text'>480円引き</span><br>　3200 － 480 ＝ <span class='math-text'>2,720円</span></p>"
+            },
+            {
+                category: "非言語：推論（消去法）",
+                question: "A、B、C、Dの4人で競走を行いました。同順位はいません。\n・Aは1位ではない。\n・BはCより順位が上である。\n・Dは最下位（4位）である。\n確実に言えることはどれですか。",
+                options: [
+                    { text: "Aは2位である", isCorrect: false },
+                    { text: "Bは1位である", isCorrect: true },
+                    { text: "Cは3位である", isCorrect: false },
+                    { text: "AはCより順位が上である", isCorrect: false }
+                ],
+                shortExplanation: "Dが4位なので、1〜3位をA,B,Cで争います。Aは1位ではなく、CはBより下なので1位になれません。消去法で1位はBしかあり得ません。",
+                detailedExplanation: "<span class='speed-tip'>瞬殺の消去法</span><p><strong>【全部の順位を確定させようとしない】</strong></p><p>推論は<span class='highlight'>「あり得ないものを消す」</span>のが一番早いです。</p><p>・Dは4位確定。残る1位の枠をA, B, Cで争います。<br>・「Aは1位ではない」→ A消去。<br>・「BはCより上」ということは、Cの上に必ずBがいるため「Cは1位ではない」→ C消去。</p><p>結果として、1位になれるのは消去法で<span class='highlight'>「B」だけ</span>と数秒で確定します。</p>"
+            },
+            {
+                category: "言語：二語の関係（瞬殺パターン）",
+                question: "最初に示された二語の関係と同じ関係のものを、ア～エから選びなさい。\n\n「時計：時間」",
+                options: [
+                    { text: "ア：辞書：言葉", isCorrect: false },
+                    { text: "イ：温度計：気温", isCorrect: true },
+                    { text: "ウ：眼鏡：視力", isCorrect: false },
+                    { text: "エ：財布：紙幣", isCorrect: false }
+                ],
+                shortExplanation: "「時計」は「時間」を【測定するもの（計るもの）】です。同じく「温度計」は「気温」を【測定するもの】という機能・目的の関係です。",
+                detailedExplanation: "<span class='speed-tip'>関係性の言語化</span><p><strong>【AはBを◯◯する道具、と文を作る】</strong></p><p>関係性問題は、2つの単語を「短い一文」で結びつけ、それに綺麗に当てはまるものを探すのが最速です。</p><p>基本文：「時計」は「時間」を<span class='highlight'>測定する（計る）ための道具</span>である。</p><p>ア：「辞書」は「言葉」を調べる道具（×計るではない）<br>イ：「温度計」は「気温」を<span class='highlight'>測定する道具</span>（〇ピッタリ一致！）<br>ウ：「眼鏡」は「視力」を矯正する道具<br>エ：「財布」は「紙幣」を収納する道具</p>"
+            },
+            {
+                category: "非言語：速度算（公式の活用）",
+                question: "ある道のりを行きは時速60km、帰りは時速40kmで往復しました。このときの往復の「平均時速」を求めなさい。",
+                options: [
+                    { text: "時速 48km", isCorrect: true },
+                    { text: "時速 50km", isCorrect: false },
+                    { text: "時速 52km", isCorrect: false },
+                    { text: "時速 54km", isCorrect: false }
+                ],
+                shortExplanation: "「(60+40)÷2=50」とするのは引っかけです。往復の平均速度の公式「(2 × 行きの速さ × 帰りの速さ) ÷ (行きの速さ + 帰りの速さ)」を使います。",
+                detailedExplanation: "<span class='speed-tip'>必殺の公式</span><p><strong>【単純に足して2で割る罠に注意】</strong></p><p>速度算で往復の平均時速を求める問題は、SPIの超頻出ひっかけ問題です。<span class='text-red-600 font-bold'>絶対に行きと帰りを足して2で割ってはいけません（不正解になります）。</span>帰りの方が時間がかかっているため、平均は遅い方に引っ張られます。</p><p>以下の公式を暗記しておくと5秒で解けます。<br><br><strong>★往復の平均速度の公式：<span class='math-text'>2ab / (a+b)</span></strong><br>（a=行き、b=帰り）</p><p>公式に当てはめる：<br><span class='math-text'>(2 × 60 × 40) ÷ (60 + 40)<br>＝ 4800 ÷ 100 ＝ 48</span><br>よって、時速48kmが正解です。</p>"
+            },
+            
+            // --- ROUND 2 ---
+            {
+                category: "非言語：計算の工夫（暗算）",
+                question: "次の計算をしなさい。\n\n99 × 45",
+                options: [
+                    { text: "4,405", isCorrect: false },
+                    { text: "4,455", isCorrect: true },
+                    { text: "4,500", isCorrect: false },
+                    { text: "4,545", isCorrect: false }
+                ],
+                shortExplanation: "99を「100 - 1」に分解します。45 × (100 - 1) = 4500 - 45 = 4,455 と瞬時に計算できます。",
+                detailedExplanation: "<span class='speed-tip'>タイムロス回避</span><p><strong>【99は「100-1」に変換】</strong></p><p>Round 1の「198」と同じパターンです。筆算を書く手間を省きましょう。</p><p>① 99 を (100 - 1) と考える。<br>② 45 を分配して掛ける。<br><span class='math-text'>45 × 100 ＝ 4500</span><br><span class='math-text'>45 × 1 ＝ 45</span><br>③ 引き算をする<br><span class='math-text'>4500 － 45 ＝ 4455</span></p>"
+            },
+            {
+                category: "非言語：割合の速算",
+                question: "定価5,000円の商品を「2割引きの、さらに1割引き」で購入しました。支払った金額はいくらですか。",
+                options: [
+                    { text: "3,500円", isCorrect: false },
+                    { text: "3,600円", isCorrect: true },
+                    { text: "3,800円", isCorrect: false },
+                    { text: "4,000円", isCorrect: false }
+                ],
+                shortExplanation: "「2割引き（0.8倍）」の「1割引き（0.9倍）」は、0.8 × 0.9 = 0.72倍（28%引き）です。5000 × 0.72 = 3600円。",
+                detailedExplanation: "<span class='speed-tip'>連続割引のテクニック</span><p><strong>【3割引き（3500円）とするのは罠！】</strong></p><p>連続して割引される場合、足し算（2割+1割=3割）をしてはいけません。<span class='highlight'>掛け算で一気に倍率を出す</span>のが最速です。</p><p>① 割引率を掛け合わせる<br>2割引き＝0.8倍、1割引き＝0.9倍。<br><span class='math-text'>0.8 × 0.9 ＝ 0.72倍</span></p><p>② 定価に掛ける<br><span class='math-text'>5000 × 0.72 ＝ 3600円</span></p>"
+            },
+            {
+                category: "言語：二語の関係",
+                question: "最初に示された二語の関係と同じ関係のものを、ア～エから選びなさい。\n\n「魚：鱗（うろこ）」",
+                options: [
+                    { text: "ア：鳥：羽", isCorrect: true },
+                    { text: "イ：犬：吠える", isCorrect: false },
+                    { text: "ウ：馬：馬車", isCorrect: false },
+                    { text: "エ：猫：鼠", isCorrect: false }
+                ],
+                shortExplanation: "「魚」の表面を覆っているものが「鱗」という【全体と表面（一部）】の関係です。「鳥」の表面を覆っている「羽」が正解です。",
+                detailedExplanation: "<span class='speed-tip'>関係性の言語化</span><p><strong>【特徴的な一部に着目する】</strong></p><p>基本文：「魚」の<span class='highlight'>体表を覆っている一部</span>が「鱗」である。</p><p>ア：「鳥」の<span class='highlight'>体表を覆っている一部</span>が「羽」である。（〇ピッタリ一致）<br>イ：「犬」は「吠える」（主体と動作）<br>ウ：「馬」は「馬車」を引く（主体と対象）<br>エ：「猫」は「鼠」を捕まえる（主体と対象）</p>"
+            },
+            {
+                category: "非言語：推論（消去法）",
+                question: "P、Q、R、Sの4人がテストを受けました。同点はいません。\n・Pは1位ではない。\n・QはRより順位が上である。\n・Sは最下位（4位）である。\n1位は誰ですか。",
+                options: [
+                    { text: "P", isCorrect: false },
+                    { text: "Q", isCorrect: true },
+                    { text: "R", isCorrect: false },
+                    { text: "S", isCorrect: false }
+                ],
+                shortExplanation: "Pは1位ではなく、Sは4位、RはQより下なので1位になれません。消去法で1位はQしかありえません。",
+                detailedExplanation: "<span class='speed-tip'>瞬殺の消去法パート2</span><p><strong>【あり得ないものを消すだけ】</strong></p><p>・Sは4位なので1位ではない。（S消去）<br>・条件より、Pは1位ではない。（P消去）<br>・QはRより上（Rの上に必ずQがいる）なので、Rは1位ではない。（R消去）</p><p>残った <span class='highlight'>「Q」</span> が1位であることが数秒で確定します。</p>"
+            },
+            {
+                category: "非言語：速度算（すれ違い）",
+                question: "長さ100m、秒速20mの列車Aと、長さ150m、秒速30mの列車Bが、反対方向から走ってきてすれ違います。すれ違い終わるまでに何秒かかりますか。",
+                options: [
+                    { text: "4秒", isCorrect: false },
+                    { text: "5秒", isCorrect: true },
+                    { text: "8秒", isCorrect: false },
+                    { text: "10秒", isCorrect: false }
+                ],
+                shortExplanation: "すれ違う時は「長さの合計 ÷ 速さの合計」の公式を使います。(100+150) ÷ (20+30) = 250 ÷ 50 = 5秒 です。",
+                detailedExplanation: "<span class='speed-tip'>通過算の基本公式</span><p><strong>【すれ違いは「足し算」するだけ】</strong></p><p>列車同士の「すれ違い」は、お互いが近づくため速さが合算されます。</p><p>① 進む距離の合計を出す<br><span class='math-text'>100m ＋ 150m ＝ 250m</span><br><br>② 速さの合計を出す<br><span class='math-text'>秒速20m ＋ 秒速30m ＝ 秒速50m</span></p><p>③ 時間を求める<br><span class='math-text'>250 ÷ 50 ＝ 5秒</span> となります。</p>"
+            },
+
+            // --- ROUND 3 ---
+            {
+                category: "非言語：仕事算（公式）",
+                question: "ある仕事を仕上げるのに、Aさん1人では10日、Bさん1人では15日かかります。2人が協力してこの仕事を行うと、何日で仕上がりますか。",
+                options: [
+                    { text: "5日", isCorrect: false },
+                    { text: "6日", isCorrect: true },
+                    { text: "8日", isCorrect: false },
+                    { text: "12日", isCorrect: false }
+                ],
+                shortExplanation: "2人で協力する仕事算は「積 ÷ 和」の公式が最速です。(10 × 15) ÷ (10 + 15) = 150 ÷ 25 = 6日。",
+                detailedExplanation: "<span class='speed-tip'>仕事算の必殺公式</span><p><strong>【「積 ÷ 和」で瞬殺する】</strong></p><p>全体の仕事を最小公倍数(30)と置く解き方が王道ですが、2人が協力して最初から最後までやるだけの場合、以下の公式で1発です。</p><p><strong>★2人の仕事算公式：<span class='math-text'>(A × B) / (A ＋ B)</span></strong></p><p>公式に当てはめる：<br><span class='math-text'>(10 × 15) ÷ (10 ＋ 15)<br>＝ 150 ÷ 25<br>＝ 6</span><br>よって6日で終わります。</p>"
+            },
+            {
+                category: "非言語：集合の速算",
+                question: "40人のクラスで、犬が好きな人は20人、猫が好きな人は25人、両方好きな人は10人でした。どちらも好きではない人は何人ですか。",
+                options: [
+                    { text: "5人", isCorrect: true },
+                    { text: "10人", isCorrect: false },
+                    { text: "15人", isCorrect: false },
+                    { text: "25人", isCorrect: false }
+                ],
+                shortExplanation: "少なくとも一方が好きな人は「犬 + 猫 - 両方」で出ます。20 + 25 - 10 = 35人。全体(40)から35人を引いて、残りの5人が「どちらも好きではない人」です。",
+                detailedExplanation: "<span class='speed-tip'>ベン図のショートカット</span><p><strong>【足して、引いて、全体から引く】</strong></p><p>ベン図を書かなくても、式だけでパッと解けます。</p><p>① 「犬か猫、最低どちらかは好きな人」を出す<br><span class='math-text'>犬好き(20) ＋ 猫好き(25) － 両方好き(10)<br>＝ 35人</span></p><p>② クラス全員から引く<br><span class='math-text'>40 － 35 ＝ 5人</span></p>"
+            },
+            {
+                category: "言語：二語の関係",
+                question: "最初に示された二語の関係と同じ関係のものを、ア～エから選びなさい。\n\n「悲劇：喜劇」",
+                options: [
+                    { text: "ア：過去：歴史", isCorrect: false },
+                    { text: "イ：利益：損失", isCorrect: true },
+                    { text: "ウ：舞台：客席", isCorrect: false },
+                    { text: "エ：俳優：演技", isCorrect: false }
+                ],
+                shortExplanation: "「悲劇」と「喜劇」は互いに反対の意味を持つ【対義語】の関係です。同じく反対の意味になるのは「利益」と「損失」です。",
+                detailedExplanation: "<span class='speed-tip'>関係性の言語化</span><p><strong>【対義語ペアを見つける】</strong></p><p>基本文：「悲劇」と「喜劇」は<span class='highlight'>反対の意味（対義語）</span>である。</p><p>ア：「過去」の集積が「歴史」（意味が違う）<br>イ：「利益」と「損失」は<span class='highlight'>反対の意味</span>（〇ピッタリ一致）<br>ウ：「舞台」と「客席」は対になる場所<br>エ：「俳優」は「演技」をする</p>"
+            },
+            {
+                category: "非言語：確率のショートカット",
+                question: "コインを3回連続で投げるとき、「少なくとも1回」は表が出る確率はどれくらいですか。",
+                options: [
+                    { text: "1/8", isCorrect: false },
+                    { text: "3/8", isCorrect: false },
+                    { text: "5/8", isCorrect: false },
+                    { text: "7/8", isCorrect: true }
+                ],
+                shortExplanation: "「少なくとも1回」は「1 - (すべて裏の確率)」で計算します。すべて裏になる確率は (1/2)×(1/2)×(1/2) = 1/8。1 - 1/8 = 7/8 です。",
+                detailedExplanation: "<span class='speed-tip'>「少なくとも」の魔法の言葉</span><p><strong>【「少なくとも」を見たら逆（余事象）を考える】</strong></p><p>表が1回、2回、3回出る場合を全部足すのは時間がかかります。<span class='highlight'>「1(全体) から、条件に合わないもの（＝全部裏）を引く」</span>のが最速です。</p><p>① 全部裏になる確率を出す<br><span class='math-text'>1/2 × 1/2 × 1/2 ＝ 1/8</span></p><p>② 1から引く<br><span class='math-text'>1 － 1/8 ＝ 7/8</span></p>"
+            },
+            {
+                category: "非言語：計算の工夫（分数）",
+                question: "次の計算をしなさい。\n\n1/2 ＋ 1/4 ＋ 1/8",
+                options: [
+                    { text: "3/8", isCorrect: false },
+                    { text: "5/8", isCorrect: false },
+                    { text: "7/8", isCorrect: true },
+                    { text: "9/8", isCorrect: false }
+                ],
+                shortExplanation: "通分します。分母を8に揃えると、4/8 + 2/8 + 1/8 = 7/8 となります。",
+                detailedExplanation: "<span class='speed-tip'>倍数の通分</span><p><strong>【一番大きな分母に揃えるだけ】</strong></p><p>分数の足し算は分母を揃えます（通分）。2、4、8の最小公倍数は8なので、すべて分母を8にします。</p><p>・1/2 ＝ <span class='math-text'>4/8</span> （分母分子を4倍）<br>・1/4 ＝ <span class='math-text'>2/8</span> （分母分子を2倍）</p><p>式を直すと、<br><span class='math-text'>4/8 ＋ 2/8 ＋ 1/8 ＝ 7/8</span><br>となります。</p>"
+            }
+        ];
+
+        let currentRound = 1;
+        const MAX_ROUNDS = 3;
+        let currentQuestion = 0;
+        let score = 0;
+        let isAnswered = false;
+        let quizData = [];
+
+        // タイマーと記録用の変数
+        let startTime;
+        let timerInterval;
+        let elapsedSeconds = 0;
+        let timeRecords = []; // 現在のラウンドの各問題の解答時間
+        let roundTotalTimes = []; // 各ラウンドの合計時間 [Round1, Round2, Round3]
+
+        // 要素の取得
+        const toggleBtn = document.getElementById('toggle-detail-btn');
+        const detailWrapper = document.getElementById('detailed-explanation-wrapper');
+        const toggleIcon = document.getElementById('toggle-icon');
+        const toggleText = toggleBtn.querySelector('span');
+
+        function initRound() {
+            // ラウンドに応じた問題を5問スライス
+            const startIndex = (currentRound - 1) * 5;
+            quizData = allQuestions.slice(startIndex, startIndex + 5);
+            
+            document.getElementById('round-indicator').textContent = `ROUND ${currentRound} / ${MAX_ROUNDS}`;
+            
+            currentQuestion = 0;
+            score = 0;
+            timeRecords = [];
+            
+            document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('quiz-container').classList.remove('hidden');
+            
+            loadQuestion();
+        }
+
+        // カウントアップタイマーの開始
+        function startTimer() {
+            clearInterval(timerInterval);
+            startTime = performance.now();
+            
+            const timerDisplay = document.getElementById('timer-display');
+            timerDisplay.textContent = "0.0s";
+            timerDisplay.classList.remove('text-red-500'); // 色のリセット
+            timerDisplay.classList.add('text-slate-300');
+
+            timerInterval = setInterval(() => {
+                const now = performance.now();
+                elapsedSeconds = (now - startTime) / 1000;
+                timerDisplay.textContent = elapsedSeconds.toFixed(1) + 's';
+                
+                // 30秒を超えたら警告色（赤）にする
+                if (elapsedSeconds > 30) {
+                    timerDisplay.classList.remove('text-slate-300');
+                    timerDisplay.classList.add('text-red-500');
+                }
+            }, 50); // 50msごとに滑らかに更新
+        }
+
+        function loadQuestion() {
+            isAnswered = false;
+            const data = quizData[currentQuestion];
+            
+            document.getElementById('category-badge').textContent = data.category;
+            document.getElementById('question-text').innerHTML = data.question;
+            document.getElementById('progress-text').textContent = `QUESTION ${currentQuestion + 1} / ${quizData.length}`;
+            document.getElementById('progress-bar').style.width = `${((currentQuestion + 1) / quizData.length) * 100}%`;
+            
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+            
+            data.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = "group w-full text-left p-4 md:p-5 border-2 border-slate-100 rounded-2xl hover:bg-rose-50 hover:border-rose-200 transition-all duration-200 focus:outline-none flex items-center";
+                btn.innerHTML = `
+                    <span class="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-slate-50 text-slate-400 rounded-full mr-4 font-bold group-hover:bg-rose-100 group-hover:text-rose-600 transition-colors">${String.fromCharCode(65 + index)}</span>
+                    <span class="text-slate-700 font-medium">${opt.text}</span>
+                `;
+                btn.onclick = () => selectOption(index);
+                optionsContainer.appendChild(btn);
+            });
+
+            // 解説エリアをリセットして隠す
+            document.getElementById('explanation-container').classList.add('hidden');
+            
+            // 更に詳しくボタンの状態リセット
+            detailWrapper.classList.remove('open');
+            toggleIcon.classList.remove('rotate-180');
+            toggleText.textContent = "スピード解法のテクニックを見る";
+
+            // 問題が表示されたらタイマー開始
+            startTimer();
+        }
+
+        function selectOption(index) {
+            if (isAnswered) return;
+            isAnswered = true;
+            
+            // 解答した瞬間にタイマーストップし、記録を保存
+            clearInterval(timerInterval);
+            timeRecords.push(elapsedSeconds);
+
+            const correctIndex = quizData[currentQuestion].options.findIndex(o => o.isCorrect);
+            const options = document.getElementById('options-container').children;
+
+            if (index === correctIndex) {
+                score++;
+                options[index].classList.replace('border-slate-100', 'border-green-500');
+                options[index].classList.add('bg-green-50');
+                showExplanation(true);
+            } else {
+                options[index].classList.replace('border-slate-100', 'border-red-500');
+                options[index].classList.add('bg-red-50');
+                options[correctIndex].classList.replace('border-slate-100', 'border-green-500');
+                options[correctIndex].classList.add('bg-green-50');
+                showExplanation(false);
+            }
+            document.getElementById('score-text').textContent = `正解数: ${score}`;
+        }
+
+        function showExplanation(isCorrect) {
+            const container = document.getElementById('explanation-container');
+            const badge = document.getElementById('result-badge');
+            const icon = document.getElementById('result-icon');
+            const shortText = document.getElementById('short-explanation-text');
+            const detailText = document.getElementById('detailed-explanation-text');
+            const timeBadge = document.getElementById('time-taken-badge');
+            
+            container.classList.remove('hidden');
+            
+            // かかった時間をバッジに表示
+            timeBadge.textContent = `解答時間: ${elapsedSeconds.toFixed(1)}秒`;
+            if (elapsedSeconds <= 20) {
+                timeBadge.className = "ml-auto bg-blue-100 text-blue-700 text-sm font-bold px-3 py-1 rounded-full";
+            } else if (elapsedSeconds <= 40) {
+                timeBadge.className = "ml-auto bg-yellow-100 text-yellow-700 text-sm font-bold px-3 py-1 rounded-full";
+            } else {
+                timeBadge.className = "ml-auto bg-red-100 text-red-700 text-sm font-bold px-3 py-1 rounded-full";
+            }
+            
+            if (isCorrect) {
+                container.className = "mt-10 p-6 rounded-2xl border-2 fade-in bg-green-50 border-green-100";
+                badge.textContent = "正解です！";
+                badge.className = "text-green-700 font-bold text-xl";
+                icon.innerHTML = '<div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white">✓</div>';
+            } else {
+                container.className = "mt-10 p-6 rounded-2xl border-2 fade-in bg-red-50 border-red-100";
+                badge.textContent = "不正解です...";
+                badge.className = "text-red-700 font-bold text-xl";
+                icon.innerHTML = '<div class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white">×</div>';
+            }
+            
+            shortText.innerHTML = quizData[currentQuestion].shortExplanation;
+            detailText.innerHTML = quizData[currentQuestion].detailedExplanation;
+        }
+
+        // アコーディオン（更に詳しく）の開閉ロジック
+        toggleBtn.addEventListener('click', () => {
+            const isOpen = detailWrapper.classList.contains('open');
+            if (isOpen) {
+                detailWrapper.classList.remove('open');
+                toggleIcon.classList.remove('rotate-180');
+                toggleText.textContent = "スピード解法のテクニックを見る";
+            } else {
+                detailWrapper.classList.add('open');
+                toggleIcon.classList.add('rotate-180');
+                toggleText.textContent = "解説を閉じる";
+            }
+        });
+
+        document.getElementById('next-btn').onclick = () => {
+            currentQuestion++;
+            if (currentQuestion < quizData.length) {
+                loadQuestion();
+            } else {
+                showResult();
+            }
+        };
+
+        function showResult() {
+            document.getElementById('quiz-container').classList.add('hidden');
+            const resultScreen = document.getElementById('result-screen');
+            resultScreen.classList.remove('hidden');
+            document.getElementById('final-score').textContent = score;
+            
+            // 合計時間の計算と保存
+            const totalTime = timeRecords.reduce((sum, val) => sum + val, 0);
+            roundTotalTimes.push(totalTime);
+            
+            // タイムレポートの構築
+            let timeHtml = '<ul class="space-y-2 mb-4 text-slate-700">';
+            for(let i = 0; i < timeRecords.length; i++) {
+                let timeColor = timeRecords[i] <= 30 ? 'text-green-600' : (timeRecords[i] <= 45 ? 'text-yellow-600' : 'text-red-500');
+                timeHtml += `<li class="flex justify-between border-b border-slate-200 pb-1 border-dashed">
+                                <span>第${i+1}問</span>
+                                <span class="font-bold ${timeColor} stopwatch-font">${timeRecords[i].toFixed(1)} 秒</span>
+                             </li>`;
+            }
+            timeHtml += '</ul>';
+            
+            // 合計タイム表示
+            timeHtml += `<div class="mt-4 pt-4 border-t-2 border-slate-200 flex justify-between items-center text-lg">
+                            <span class="font-bold text-slate-800">合計タイム</span>
+                            <span class="font-black text-rose-600 stopwatch-font text-2xl">${totalTime.toFixed(1)} 秒</span>
+                         </div>`;
+
+            // 前回ラウンドとの比較（2ラウンド目以降）
+            if (currentRound > 1) {
+                const prevTime = roundTotalTimes[currentRound - 2];
+                const diff = prevTime - totalTime; // 正なら短縮（良い）、負なら遅延（悪い）
+                
+                if (diff > 0) {
+                    timeHtml += `<div class="mt-3 bg-green-100 text-green-800 px-4 py-2 rounded-lg font-bold text-center">
+                                    🎉 前回より <span class="text-xl">${diff.toFixed(1)}秒</span> 短縮しました！
+                                 </div>`;
+                } else if (diff < 0) {
+                    timeHtml += `<div class="mt-3 bg-orange-100 text-orange-800 px-4 py-2 rounded-lg font-bold text-center">
+                                    前回より ${Math.abs(diff).toFixed(1)}秒 遅くなりました
+                                 </div>`;
+                } else {
+                    timeHtml += `<div class="mt-3 bg-slate-200 text-slate-700 px-4 py-2 rounded-lg font-bold text-center">前回と全く同じタイムです</div>`;
+                }
+            }
+            
+            document.getElementById('time-details').innerHTML = timeHtml;
+            
+            // スコアに対するメッセージ
+            let message = "";
+            if (score === 5 && totalTime < 150) message = "驚異的なスピードと正確性です！本番でもこの調子でいきましょう！";
+            else if (score >= 4) message = "素晴らしい正答率です。テクニックを反復して、さらにタイムを縮めましょう。";
+            else message = "「いかに楽をして解くか」がタイム短縮の鍵です。解説のショートカットを復習してください。";
+            
+            document.getElementById('result-message').textContent = message;
+
+            // ボタンの挙動切り替え
+            const retryBtn = document.getElementById('retry-btn');
+            if (currentRound < MAX_ROUNDS) {
+                retryBtn.textContent = `ROUND ${currentRound + 1} へ挑戦！（別問題）`;
+                retryBtn.className = "w-full py-4 bg-rose-600 text-white font-bold text-lg rounded-2xl hover:bg-rose-700 transition-all shadow-lg shadow-rose-200";
+                retryBtn.onclick = () => {
+                    currentRound++;
+                    initRound();
+                };
+            } else {
+                retryBtn.textContent = "全チャレンジ終了！（最初からやり直す）";
+                retryBtn.className = "w-full py-4 bg-slate-800 text-white font-bold text-lg rounded-2xl hover:bg-slate-900 transition-all shadow-lg shadow-slate-200";
+                retryBtn.onclick = () => location.reload();
+            }
+        }
+
+        // 初期化（ROUND 1の開始）
+        window.onload = initRound;
+    </script>
+</body>
+</html>
